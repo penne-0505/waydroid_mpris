@@ -1,100 +1,106 @@
-# Documentation Driven Development Template
+# waydroid_mpris
 
-> This README is available in English and Japanese. English speakers, please scroll down.
+Waydroid 上の Apple Music を GNOME / `playerctl` から通常の MPRIS player として扱うための bridge です。
 
-## 概要
+Android companion が Apple Music の MediaSession から曲名、再生状態、操作 capability、artwork を読み、Linux host daemon がそれを `org.mpris.MediaPlayer2.waydroid_mpris` として公開します。
 
-このリポジトリは私が常用しているドキュメント駆動開発 *(Documentation Driven Development)* のテンプレートです。
+## Current Status
 
-開発サイクルはドキュメントと [TODO.md](TODO.md) によって構成されています。
+- Live metadata: verified with Apple Music in Waydroid.
+- Controls: `play`, `pause`, `play-pause`, `next`, `previous` verified through `playerctl`.
+- Artwork: Android bitmap artwork is exported, cached on host, and exposed as `mpris:artUrl`.
+- Position: MPRIS `Position` is projected while playing for seek bars and synchronized lyric clients.
+- Transport: ADB-backed local bridge. No host network listener is opened.
 
-このテンプレートは `intent` を品質保証の一次資料として扱います。中規模以上、またはリスクのある変更では `_docs/qa/` に QA test-plan と verification を残し、テストを intent-derived invariant と acceptance criteria に紐づけます。`_docs/qa/` はテストコードの置き場ではなく、計画・対応表・検証証跡の置き場です。
+The detailed verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verification.md](_docs/qa/Core/waydroid-mpris-bridge/verification.md).
 
-人がサイクルを回すことも出来ますが、基本的には**Claude Codeなどのコーディングエージェント**が、この規則に従って自律的な開発を行うために設計されました。
+## Requirements
 
-**詳細については [ガイドライン](_docs/documentation_guide.md) を参照してください。**
+- Waydroid with Apple Music installed and signed in.
+- `adb`, `playerctl`, `python`.
+- Android SDK build tools. By default the build script uses `/home/penne/Android/Sdk`, or `ANDROID_HOME` / `ANDROID_SDK_ROOT` if set.
+- ADB authorization for this host inside Waydroid. For daily use, allow the USB
+  debugging prompt with "Always allow from this computer" so the daemon can
+  reconnect after Waydroid or ADB restarts.
+- Notification listener access for `Waydroid MPRIS Probe` inside Waydroid.
 
-初めて使う場合は、まず [Quickstart](QUICKSTART.md) を読んでください。
+## Build And Install
 
-## 使用方法
+```bash
+./scripts/build-android-probe.sh
+./scripts/install-android-probe.sh
+./scripts/open-android-notification-listener-settings.sh
+```
 
-1. このリポジトリをフォークまたはクローンします。
-2. プロジェクトに合わせてドキュメントと設定ファイルを編集します。
-3. 開発を開始します。
+Enable `Waydroid MPRIS Probe` in Android notification listener settings, then start Apple Music playback.
 
-配布用 ZIP を作る場合は、`.git` / `.jj` などの VCS メタデータを含めないために、GitHub 標準アーカイブまたは `scripts/create-template-archive.sh` を使用してください。
+## Run
 
-ローカルでドキュメント検証をまとめて実行する場合は、`scripts/check-docs.sh` を使います。
+Apple Music playback is visible to GNOME only while the host MPRIS daemon is
+running. The Android companion records the media session, but it does not publish
+MPRIS by itself.
 
-既存プロジェクトへ後付け導入する場合は、`DD_SCOPE_BASE` に導入時点の commit を設定して「導入以降に追加した docs だけ」を検証対象に絞れます。設定方法は [Quickstart](QUICKSTART.md) と [documentation_operations.md](_docs/standards/documentation_operations.md) を参照してください。
+```bash
+python scripts/run-host-mpris-live.py --poll-interval 1.0
+```
 
-root 直下の Markdown は agent 向けの active guidance として扱われます。一回限りの実装プロンプトを履歴として残す場合は `_evals/prompts/` などへ移し、非運用文書であることを明記してください。
+If multiple ADB devices are connected:
 
-### カスタマイズ
+```bash
+python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-interval 1.0
+```
 
-使用に当たっては、以下のファイルをプロジェクトに合わせてカスタマイズしてください。
+If Waydroid shows a USB debugging authorization prompt, allow this computer.
+Without ADB authorization the daemon cannot read the Android companion snapshot,
+so MPRIS consumers may show `No active media` / `Stopped` even while Apple Music
+is playing.
 
-#### AGENTS.md
+Check from host:
 
-変更の推奨事項はありませんが、特定コマンドの使用指示が含まれているので、必要に応じて編集してください。
+```bash
+playerctl --list-all
+playerctl --player=waydroid_mpris metadata --format '{{title}}|{{artist}}|{{mpris:artUrl}}'
+playerctl --player=waydroid_mpris play-pause
+```
 
-#### README.md
+If `playerctl --list-all` does not show `waydroid_mpris`, start the host daemon
+or enable the systemd user service from the usage guide.
 
-このREADME自体も、プロジェクトに合わせて編集してください。
+## Optional User Service
 
-#### LICENSE.txt
+For daily use, generate and install a systemd user service from the current
+checkout path:
 
-[LICENSE](LICENSE.txt)についても、特に著作者の表示を編集してください。
+```bash
+./scripts/install-user-service.sh --enable-now
+```
 
-## ライセンス
+If multiple ADB devices are connected:
 
-このリポジトリは [MITライセンス](LICENSE.txt) の下でライセンスされています。
+```bash
+./scripts/install-user-service.sh --device 192.168.240.112:5555 --enable-now
+```
 
----
+## Diagnostics
 
-## Summary
+```bash
+python scripts/doctor.py
+```
 
-This repository is a template for Documentation Driven Development that I commonly use.
+For systemd user service setup and troubleshooting details, see [_docs/guide/Core/waydroid-mpris-bridge/usage.md](_docs/guide/Core/waydroid-mpris-bridge/usage.md).
 
-The development cycle is structured around documentation and [TODO.md](TODO.md).
+## Development Checks
 
-This template treats `intent` documents as primary QA inputs. Medium-sized or risky changes keep a QA test plan and verification record under `_docs/qa/`, and tests should map back to intent-derived invariants and acceptance criteria. `_docs/qa/` is for plans, traceability, and evidence; test code belongs in the codebase's normal test locations.
-
-While humans can run the cycle, it is primarily designed **for coding agents like Claude Code** to autonomously develop according to these rules.
-
-**For more details, please refer to the [Guidelines](_docs/documentation_guide.md).**
-
-If this is your first time using the template, start with the [Quickstart](QUICKSTART.md).
-
-## Usage
-
-1. Fork or clone this repository.
-2. Edit the documentation and configuration files to suit your project.
-3. Start development.
-
-When creating a distribution ZIP, use GitHub's standard archive or `scripts/create-template-archive.sh` so VCS metadata such as `.git` / `.jj` is not included.
-
-Use `scripts/check-docs.sh` to run the local documentation validators together.
-
-When adopting this template in an existing project, set `DD_SCOPE_BASE` to the adoption commit so that only docs added after adoption are validated. See the [Quickstart](QUICKSTART.md) and [documentation_operations.md](_docs/standards/documentation_operations.md) for setup.
-
-Root-level Markdown is treated as active guidance for agents. If you keep a one-off implementation prompt for history, move it under `_evals/prompts/` or another historical location and mark it as non-operational.
-
-### Customization
-
-When using this template, please customize the following files to fit your project.
-
-#### AGENTS.md
-
-No specific changes are recommended here, but feel free to edit it as needed, especially if you want to suggest the use of certain commands.
-
-#### README.md
-
-Feel free to edit this README itself to suit your project.
-
-#### LICENSE.txt
-
-Please edit the [LICENSE](LICENSE.txt) file, particularly the author attribution.
+```bash
+python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py
+python -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scripts/run-host-mpris-fixture.py scripts/doctor.py scripts/run-disruptive-waydroid-restart-qa.py
+bash -n scripts/install-user-service.sh
+./scripts/install-user-service.sh --dry-run
+./scripts/build-android-probe.sh
+./scripts/check-docs.sh
+git diff --check
+```
 
 ## License
-This repository is licensed under the [MIT License](LICENSE.txt).
+
+[MIT](LICENSE.txt)

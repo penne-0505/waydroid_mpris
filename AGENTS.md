@@ -12,3 +12,17 @@
 - 完了前には `qa-review` skill を使い、verification verdict を確認する。
 - 安全性・権限・secret・外部入力の扱いは [security for agents](_docs/standards/security_for_agents.md) に従う。
 - root 直下の Markdown は active project guidance として扱われる。一回限りの実装プロンプトを残す場合は `_evals/prompts/` 等へ移し、非運用の履歴資料として明記する。
+
+## Project Commands
+
+- Android companion build: `./scripts/build-android-probe.sh`
+- Android companion install: `./scripts/install-android-probe.sh`
+- Permission settings: `./scripts/open-android-notification-listener-settings.sh`
+- Host fixture daemon: `python scripts/run-host-mpris-fixture.py fixtures/probe/apple-music-playing.sample.json`
+- Host live daemon: `python scripts/run-host-mpris-live.py --poll-interval 1.0`
+- User service install: `./scripts/install-user-service.sh --enable-now`
+- User service dry-run: `./scripts/install-user-service.sh --dry-run`
+- Diagnostics: `python scripts/doctor.py`
+- Disruptive restart QA: `python scripts/run-disruptive-waydroid-restart-qa.py --i-understand-this-stops-waydroid --device <adb-serial>`
+- Unit checks: `python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py`
+- Docs checks: `./scripts/check-docs.sh`

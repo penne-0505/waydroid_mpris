@@ -1,0 +1,113 @@
+{
+  "schema": "dev.penne.waydroid_mpris.probe.v0",
+  "reason": "fixture",
+  "targetPackage": "com.apple.android.music",
+  "notificationListenerEnabled": true,
+  "sessionCount": 1,
+  "sessions": [
+    {
+      "packageName": "com.apple.android.music",
+      "metadata": {
+        "present": true,
+        "mediaId": "example-media-id",
+        "title": "Example Track",
+        "artist": "Example Artist",
+        "album": "Example Album",
+        "albumArtist": "Example Artist",
+        "albumArtUri": "content://com.apple.android.music.provider.ArtworkProvider/example/redacted",
+        "durationMs": 151000,
+        "description": {
+          "title": "Example Track",
+          "subtitle": "Example Artist",
+          "description": "Example Album",
+          "iconUri": "content://com.apple.android.music.provider.ArtworkProvider/example/redacted"
+        },
+        "artwork": {
+          "art": {
+            "present": false
+          },
+          "albumArt": {
+            "present": true,
+            "width": 315,
+            "height": 315,
+            "byteCount": 396900
+          },
+          "displayIcon": {
+            "present": true,
+            "width": 315,
+            "height": 315,
+            "byteCount": 396900
+          }
+        }
+      },
+      "playbackState": {
+        "present": true,
+        "state": "playing",
+        "stateCode": 3,
+        "positionMs": 119099,
+        "speed": 1,
+        "updateTimeMs": 81910789,
+        "actionsRaw": 2489779,
+        "actions": [
+          "pause",
+          "next",
+          "previous",
+          "seekTo",
+          "stop"
+        ]
+      }
+    }
+  ],
+  "selectedAppleMusicSession": {
+    "packageName": "com.apple.android.music",
+    "metadata": {
+      "present": true,
+      "mediaId": "example-media-id",
+      "title": "Example Track",
+      "artist": "Example Artist",
+      "album": "Example Album",
+      "albumArtist": "Example Artist",
+      "albumArtUri": "content://com.apple.android.music.provider.ArtworkProvider/example/redacted",
+      "durationMs": 151000,
+      "description": {
+        "title": "Example Track",
+        "subtitle": "Example Artist",
+        "description": "Example Album",
+        "iconUri": "content://com.apple.android.music.provider.ArtworkProvider/example/redacted"
+      },
+      "artwork": {
+        "art": {
+          "present": false
+        },
+        "albumArt": {
+          "present": true,
+          "width": 315,
+          "height": 315,
+          "byteCount": 396900
+        },
+        "displayIcon": {
+          "present": true,
+          "width": 315,
+          "height": 315,
+          "byteCount": 396900
+        }
+      }
+    },
+    "playbackState": {
+      "present": true,
+      "state": "playing",
+      "stateCode": 3,
+      "positionMs": 119099,
+      "speed": 1,
+      "updateTimeMs": 81910789,
+      "actionsRaw": 2489779,
+      "actions": [
+        "pause",
+        "next",
+        "previous",
+        "seekTo",
+        "stop"
+      ]
+    }
+  }
+}

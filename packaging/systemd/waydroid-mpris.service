@@ -1,0 +1,21 @@
+# Static sample. Prefer generating a user-specific unit with:
+# ./scripts/install-user-service.sh --enable-now
+#
+# If copying this file manually, edit WorkingDirectory and ExecStart when the
+# checkout does not live at ~/dev/incubator/waydroid_mpris.
+
+[Unit]
+Description=Waydroid MPRIS bridge
+Documentation=https://github.com/penne-0505/waydroid_mpris
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/dev/incubator/waydroid_mpris
+ExecStart=/usr/bin/python %h/dev/incubator/waydroid_mpris/scripts/run-host-mpris-live.py --poll-interval 1.0
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
