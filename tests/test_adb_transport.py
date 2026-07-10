@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from host.waydroid_mpris.adb_transport import AdbProbeTransport, AdbTransportError
 
@@ -75,6 +76,26 @@ class AdbProbeTransportTest(unittest.TestCase):
 
         with self.assertRaisesRegex(AdbTransportError, "device offline"):
             transport.read_snapshot()
+
+    @patch("host.waydroid_mpris.adb_transport.subprocess.run")
+    def test_inv001_artwork_read_uses_configured_target(self, run) -> None:
+        run.return_value = SimpleNamespace(returncode=0, stdout=b"png", stderr=b"")
+        transport = AdbProbeTransport(adb_path="/usr/bin/adb", device="192.168.240.112:5555")
+
+        self.assertEqual(transport.read_file("/artwork.png"), b"png")
+
+        command = run.call_args.args[0]
+        self.assertEqual(
+            command,
+            [
+                "/usr/bin/adb",
+                "-s",
+                "192.168.240.112:5555",
+                "exec-out",
+                "cat",
+                "/artwork.png",
+            ],
+        )
 
 
 if __name__ == "__main__":

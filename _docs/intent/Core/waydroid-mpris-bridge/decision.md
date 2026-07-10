@@ -3,11 +3,12 @@ title: Waydroid MPRIS bridge architecture decision
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-09
+updated_at: 2026-07-10
 references:
   - "_docs/survey/Core/waydroid-mpris-bridge/survey.md"
   - "_docs/plan/Core/waydroid-mpris-bridge/plan.md"
   - "_docs/qa/Core/waydroid-mpris-bridge/test-plan.md"
+  - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
 related_issues: []
 related_prs: []
 ---

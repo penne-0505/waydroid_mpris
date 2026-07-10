@@ -3,12 +3,13 @@ title: Waydroid MPRIS bridge implementation plan
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-09
+updated_at: 2026-07-10
 references:
   - "_docs/survey/Core/waydroid-mpris-bridge/survey.md"
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
   - "_docs/qa/Core/waydroid-mpris-bridge/test-plan.md"
   - "_docs/reference/Core/bridge-protocol/reference.md"
+  - "_docs/plan/Core/waydroid-adb-auto-recovery/plan.md"
   - "../../../../fixtures/probe/apple-music-playing.sample.json"
 related_issues: []
 related_prs: []
@@ -233,6 +234,21 @@ Exit criteria:
   - 2026-07-09: invalid prior cache を Android source から置換し、host cache と Dynamic Music Pill cache の IEND complete を確認済み。
 - Bridge が lyrics provider そのものではないことが user-facing docs に残る。
   - 2026-07-09: usage guide の Current Limitations に記録済み。
+
+### M7: Automatic Waydroid ADB recovery
+
+Goal: systemd user service の daemon が Waydroid / ADB connection 消失から安全に
+自動復帰し、復帰不能状態を bounded retry / logging と operator diagnosis で扱う。
+
+詳細仕様、intent、QA は変更単位の
+`_docs/plan/Core/waydroid-adb-auto-recovery/plan.md` を起点とする。
+
+Exit criteria:
+
+- running Waydroid IP または explicit serial が一意な ADB target になる。
+- missing / offline は bounded `adb connect` retry、`unauthorized` は operator action になる。
+- source unavailable 中の stopped / empty state と既存 local-only / selected-session invariant が維持される。
+- unit / static verification と、承認後の disruptive live recovery E2E が区別して記録される。
 
 ## QA Plan
 

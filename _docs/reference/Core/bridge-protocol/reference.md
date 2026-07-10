@@ -3,11 +3,13 @@ title: Waydroid MPRIS bridge protocol
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-09
+updated_at: 2026-07-10
 references:
   - "_docs/plan/Core/waydroid-mpris-bridge/plan.md"
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
+  - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
   - "_docs/qa/Core/waydroid-mpris-bridge/test-plan.md"
+  - "_docs/qa/Core/waydroid-adb-auto-recovery/verification.md"
   - "../../../../fixtures/probe/apple-music-playing.sample.json"
 related_issues: []
 related_prs: []
@@ -136,6 +138,24 @@ The first live transport intentionally avoids opening a socket:
 This is local to the ADB connection and does not expose a network listener. A
 future transport may replace ADB, but doing so must update plan / intent / QA
 because it changes INV-004's exposure boundary.
+
+### ADB Target Lifecycle
+
+For the live daemon, an explicit `--device` serial takes precedence. Otherwise,
+the target is the validated IP reported by a running `waydroid status`, using
+port 5555. The target is never inferred from whichever unrelated ADB device is
+currently unique or first in `adb devices -l`.
+
+All bridge payload operations use `adb -s <target>`. A missing or offline TCP
+target receives bounded `adb connect <target>` retries. An `unauthorized` target
+requires approval of Android's debugging prompt and does not receive an
+authorization-bypass attempt. Waydroid stopped or unknown-IP states remain
+unavailable until discovery succeeds. Any unavailable state continues to map to
+the protocol's empty snapshot and therefore MPRIS `Stopped` / no current track.
+
+The recovery path is an outbound ADB client connection only. It opens no host
+listener, does not reset the host-wide ADB server, and does not control the
+Waydroid session or container lifecycle.
 
 ## Artwork Cache
 

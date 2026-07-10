@@ -2,7 +2,7 @@
 
 ## 0. System Metadata
 
-- **Current Max ID**: `Next ID No: 16` (タスク追加時にインクリメント必須)
+- **Current Max ID**: `Next ID No: 18` (タスク追加時にインクリメント必須)
 - **ID Source of Truth**: このファイルの `Next ID No` 行が、全プロジェクトにおける唯一の ID 発番元である。
 
 ## 1. Task Lifecycle (State Machine)
@@ -305,6 +305,35 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
 ---
 
 ## Backlog
+
+### Core-Test-17: [Test] Verify automatic ADB recovery against live Waydroid
+
+- **Title**: [Test] Verify automatic ADB recovery against live Waydroid
+- **ID**: Core-Test-17
+- **Priority**: P1
+- **Size**: S
+- **Risk**: High
+- **Area**: Core
+- **Dependencies**: []
+- **Goal**: installed user service が実際の ADB disconnect / Waydroid restart / authorization transition から manual `adb connect` なしで復帰することを live evidence で確認する。
+- **Acceptance Criteria**:
+  - AC-001: new daemon code で稼働する installed service が ADB target 消失後に bounded retry で `device` へ戻り、manual `adb connect` なしで snapshot polling を再開する。
+  - AC-002: live `unauthorized` state が operator action required と診断され、approval 前は stopped state、approval 後は自動復帰になる。
+  - AC-003: journal が同一 failure を毎 poll 出さず、初回・状態変化・60 秒 reminder・recovery を観測できる。
+  - AC-004: recovery 前は MPRIS `Stopped` / no-track / `CanControl=false`、recovery 後は selected Apple Music session の metadata / controls / artwork が戻る。
+- **Steps**:
+  1. [ ] service restart、ADB disconnect、Waydroid restart、authorization prompt 操作の承認を得る
+  2. [ ] installed service を new checkout code で restart する
+  3. [ ] ADB disconnect と Waydroid restart の recovery latency / journal / MPRIS transition を採取する
+  4. [ ] unauthorized が発生した場合は operator guidance と approval 後 recovery を採取する
+  5. [ ] verification verdict と parent verification の deferred coverage を更新する
+- **Description**:
+  - Context: `Core-Enhance-16` は非破壊 unit/static/read-only verification まで PARTIAL で完了した。
+  - Notes: この task は playback と Waydroid / ADB / user service を中断する。ユーザーの明示承認なしに実行しない。
+- **Plan**: _docs/plan/Core/waydroid-adb-auto-recovery/plan.md
+- **Intent**: _docs/intent/Core/waydroid-adb-auto-recovery/decision.md
+- **QA**: _docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md
+- **Verification**: None
 
 ---
 

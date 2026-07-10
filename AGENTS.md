@@ -24,5 +24,5 @@
 - User service dry-run: `./scripts/install-user-service.sh --dry-run`
 - Diagnostics: `python scripts/doctor.py`
 - Disruptive restart QA: `python scripts/run-disruptive-waydroid-restart-qa.py --i-understand-this-stops-waydroid --device <adb-serial>`
-- Unit checks: `python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py`
+- Unit checks: `python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py`
 - Docs checks: `./scripts/check-docs.sh`

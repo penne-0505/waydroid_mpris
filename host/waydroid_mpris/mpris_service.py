@@ -14,6 +14,7 @@ import dbus.mainloop.glib
 from gi.repository import GLib
 
 from .adb_transport import DEFAULT_PROBE_PATH, AdbProbeTransport
+from .adb_recovery import AdbRecoveryManager, FailureLogReporter
 from .artwork import AdbArtworkCache
 from .position import PositionProjector
 from . import protocol
@@ -248,12 +249,15 @@ def serve_live(
 ) -> None:
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
+    recovery = AdbRecoveryManager(adb_path=adb_path, device=device)
     transport = AdbProbeTransport(
         adb_path=adb_path,
         device=device,
         probe_path=probe_path or DEFAULT_PROBE_PATH,
+        recovery_manager=recovery,
     )
-    snapshot = read_live_snapshot_or_empty(transport)
+    failure_reporter = FailureLogReporter(lambda message: print(message, file=sys.stderr))
+    snapshot = read_live_snapshot_or_empty(transport, failure_reporter)
     artwork_cache = AdbArtworkCache(transport, artwork_cache_dir)
     mpris = WaydroidMprisObject(
         bus,
@@ -263,19 +267,28 @@ def serve_live(
     )
 
     def poll() -> bool:
-        mpris.update_snapshot(read_live_snapshot_or_empty(transport))
+        mpris.update_snapshot(read_live_snapshot_or_empty(transport, failure_reporter))
         return True
 
     GLib.timeout_add(max(250, int(poll_interval_seconds * 1000)), poll)
     run_mainloop()
 
 
-def read_live_snapshot_or_empty(transport: AdbProbeTransport) -> dict[str, Any]:
+def read_live_snapshot_or_empty(
+    transport: AdbProbeTransport,
+    failure_reporter: FailureLogReporter | None = None,
+) -> dict[str, Any]:
     try:
-        return transport.read_snapshot()
+        snapshot = transport.read_snapshot()
     except Exception as ex:
-        print(f"waydroid-mpris: failed to read live probe: {ex}", file=sys.stderr)
+        if failure_reporter is None:
+            print(f"waydroid-mpris: failed to read live probe: {ex}", file=sys.stderr)
+        else:
+            failure_reporter.report_failure(ex)
         return protocol.empty_snapshot("adb_probe_read_failed", str(ex))
+    if failure_reporter is not None:
+        failure_reporter.report_recovery()
+    return snapshot
 
 
 def run_mainloop() -> None:

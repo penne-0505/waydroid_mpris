@@ -3,11 +3,14 @@ title: Waydroid MPRIS bridge usage guide
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-09
+updated_at: 2026-07-10
 references:
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
+  - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
   - "_docs/reference/Core/bridge-protocol/reference.md"
   - "_docs/qa/Core/waydroid-mpris-bridge/verification.md"
+  - "_docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md"
+  - "_docs/qa/Core/waydroid-adb-auto-recovery/verification.md"
 related_issues: []
 related_prs: []
 ---
@@ -39,10 +42,12 @@ run the install command again. Then open notification listener settings:
 ```
 
 Enable `Waydroid MPRIS Probe`, start Apple Music playback, and leave Waydroid
-ADB authorized. If the device is listed as `unauthorized`, reconnect with
-`adb connect 192.168.240.112:5555` and approve the prompt inside Waydroid. While
-ADB is unauthorized, the host daemon intentionally exposes `Stopped` / no active
-track instead of stale Apple Music metadata.
+ADB authorized. The daemon discovers the runtime Waydroid IP and attempts
+`adb connect` when that target is missing or offline. If the target is listed as
+`unauthorized`, approve the prompt inside Waydroid; the daemon intentionally
+does not bypass Android's authorization boundary. While authorization is
+pending, it exposes `Stopped` / no active track instead of stale Apple Music
+metadata.
 
 ## Run Host Daemon
 
@@ -54,7 +59,8 @@ until `waydroid_mpris` is running on the host user session bus.
 python scripts/run-host-mpris-live.py --poll-interval 1.0
 ```
 
-If more than one ADB device is connected, pass the Waydroid serial:
+Automatic discovery always scopes bridge I/O to the Waydroid IP serial, even if
+other ADB devices are connected. To pin a specific serial instead:
 
 ```bash
 python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-interval 1.0
@@ -79,8 +85,7 @@ manager, and starts the service only when `--enable-now` is passed.
 systemctl --user status waydroid-mpris.service
 ```
 
-If more than one ADB device is connected, install the service with an explicit
-serial:
+To pin an explicit serial in the generated service:
 
 ```bash
 ./scripts/install-user-service.sh --device 192.168.240.112:5555 --enable-now
@@ -100,9 +105,35 @@ manual inspection. It assumes the checkout lives at
 python scripts/doctor.py
 ```
 
-The doctor distinguishes missing host commands, Waydroid not running, ADB device
-absence, missing companion package, notification listener denial, missing Apple
-Music session, absent artwork file, and host MPRIS daemon absence.
+The doctor is read-only. It distinguishes missing host commands, Waydroid not
+running, the resolved ADB target's `device` / `missing` / `offline` /
+`unauthorized` state, missing companion package, notification listener denial,
+missing Apple Music session, absent artwork file, and host MPRIS daemon absence.
+`unauthorized` is reported as requiring operator action.
+
+## Automatic ADB Recovery
+
+The live daemon resolves its target in this order:
+
+1. the explicit `--device` serial, when configured;
+2. otherwise, the validated `IP address` reported by a running Waydroid session,
+   with ADB port 5555.
+
+Every snapshot, artwork, and command operation uses `adb -s <resolved-target>`.
+A missing or offline TCP target triggers `adb connect` with exponential backoff
+from 1 second up to 30 seconds. Waydroid stopped / IP unknown states do not fall
+back to an unrelated ADB device. Identical source-failure logs are emitted on
+the first occurrence, on a state change, and as a 60-second reminder; recovery
+is logged immediately.
+
+The daemon never runs `adb kill-server`, starts or restarts Waydroid, or accepts
+an Android debugging prompt. These operations would affect state outside the
+bridge's selected target or bypass user consent.
+
+The non-destructive implementation verification is currently `PARTIAL`; see
+`_docs/qa/Core/waydroid-adb-auto-recovery/verification.md`. Actual service /
+Waydroid restart and authorization-transition evidence remains in
+`Core-Test-17` and requires explicit approval.
 
 ## Recovery Checklist
 
@@ -116,10 +147,11 @@ waydroid status
 systemctl --user restart waydroid-mpris.service
 ```
 
-If ADB no longer lists Waydroid as `device`, reconnect with
-`adb connect 192.168.240.112:5555`, reopen Waydroid if needed, and accept the
-ADB authorization prompt if Android shows one. For daily use, choose "Always
-allow from this computer". If the notification listener check fails, run
+If the resolved target is `missing` or `offline`, leave Waydroid running and
+allow up to 30 seconds for the daemon's bounded reconnect retry. If the target
+is `unauthorized`, accept the ADB authorization prompt in Waydroid; for daily
+use, choose "Always allow from this computer". If the notification listener
+check fails, run
 `./scripts/open-android-notification-listener-settings.sh` and enable `Waydroid
 MPRIS Probe` again.
 
@@ -159,7 +191,7 @@ adb connect 192.168.240.112:5555
 - The bridge exposes synchronized MPRIS `Position`, but it does not provide
   lyrics itself. Extensions that show lyrics may still depend on their own
   lyric provider coverage for the current track.
-- Waydroid restart can require Android ADB reauthorization before the bridge can
-  read snapshots again.
+- Android can require ADB reauthorization after restart. The daemon diagnoses
+  this state but cannot proceed until the user approves the prompt.
 - The Android app is still named `Waydroid MPRIS Probe` internally because the
   probe app became the companion app seed.

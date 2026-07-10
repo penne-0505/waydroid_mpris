@@ -17,7 +17,7 @@ Generate and install a systemd user service for the Waydroid MPRIS host daemon.
 This script does not use sudo and only writes under ~/.config/systemd/user.
 
 Options:
-  --device SERIAL          Pass a fixed ADB serial to the host daemon.
+  --device SERIAL          Pin an ADB serial instead of automatic Waydroid discovery.
   --poll-interval SECONDS  Poll interval for ADB snapshot reads. Default: 1.0.
   --service-name NAME      systemd user service name without .service.
                            Default: waydroid-mpris.

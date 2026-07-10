@@ -10,11 +10,12 @@ waydroid status
 adb devices
 ```
 
-Waydroid must be running, ADB must show the Waydroid device as `device`, and Apple Music must be installed and signed in.
-If Waydroid shows a USB debugging prompt, allow this computer. For daily use,
-enable "Always allow from this computer"; otherwise ADB may become
-`unauthorized` after reconnects and the host player will fall back to
-`Stopped` / no active media.
+Waydroid must be running, and Apple Music must be installed and signed in. The
+host daemon discovers the running Waydroid IP and runs `adb connect` when its
+target is missing or offline. If Waydroid shows a USB debugging prompt, allow
+this computer. For daily use, enable "Always allow from this computer";
+`unauthorized` requires that operator action and the host player remains
+`Stopped` / no active media until approval.
 
 ## 2. Android Companion
 
@@ -35,7 +36,8 @@ until the host daemon is running.
 python scripts/run-host-mpris-live.py --poll-interval 1.0
 ```
 
-If ADB has more than one device:
+Unrelated ADB devices are not selected by automatic discovery. To pin a specific
+Waydroid serial:
 
 ```bash
 python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-interval 1.0
@@ -61,7 +63,7 @@ Generate a service from this checkout path and start it:
 ./scripts/install-user-service.sh --enable-now
 ```
 
-If ADB has more than one device:
+To pin a specific serial in the service:
 
 ```bash
 ./scripts/install-user-service.sh --device 192.168.240.112:5555 --enable-now

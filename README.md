@@ -11,8 +11,9 @@ Android companion が Apple Music の MediaSession から曲名、再生状態�
 - Artwork: Android bitmap artwork is exported, cached on host, and exposed as `mpris:artUrl`.
 - Position: MPRIS `Position` is projected while playing for seek bars and synchronized lyric clients.
 - Transport: ADB-backed local bridge. No host network listener is opened.
+- Recovery: the live daemon discovers the running Waydroid IP, reconnects a missing/offline ADB target with bounded backoff, and keeps `unauthorized` as an operator action. Automated coverage passes; disruptive live recovery QA remains deferred.
 
-The detailed verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verification.md](_docs/qa/Core/waydroid-mpris-bridge/verification.md).
+The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verification.md](_docs/qa/Core/waydroid-mpris-bridge/verification.md). Automatic recovery has a `PARTIAL` verification record in [_docs/qa/Core/waydroid-adb-auto-recovery/verification.md](_docs/qa/Core/waydroid-adb-auto-recovery/verification.md); live restart / authorization QA requires explicit approval.
 
 ## Requirements
 
@@ -44,7 +45,9 @@ MPRIS by itself.
 python scripts/run-host-mpris-live.py --poll-interval 1.0
 ```
 
-If multiple ADB devices are connected:
+The daemon resolves the running Waydroid IP and scopes every bridge command to
+that ADB serial, so unrelated connected devices are not selected. To pin a
+specific Waydroid serial instead of using discovery:
 
 ```bash
 python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-interval 1.0
@@ -53,7 +56,8 @@ python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-inter
 If Waydroid shows a USB debugging authorization prompt, allow this computer.
 Without ADB authorization the daemon cannot read the Android companion snapshot,
 so MPRIS consumers may show `No active media` / `Stopped` even while Apple Music
-is playing.
+is playing. The daemon does not bypass `unauthorized`; after approval, its
+read-only state checks resume the bridge automatically.
 
 Check from host:
 
@@ -75,7 +79,7 @@ checkout path:
 ./scripts/install-user-service.sh --enable-now
 ```
 
-If multiple ADB devices are connected:
+To pin a specific serial in the generated service:
 
 ```bash
 ./scripts/install-user-service.sh --device 192.168.240.112:5555 --enable-now
@@ -87,12 +91,16 @@ If multiple ADB devices are connected:
 python scripts/doctor.py
 ```
 
+The doctor is read-only. It reports the resolved target as `device`, `missing`,
+`offline`, or `unauthorized`; the last state explicitly requires approval inside
+Waydroid.
+
 For systemd user service setup and troubleshooting details, see [_docs/guide/Core/waydroid-mpris-bridge/usage.md](_docs/guide/Core/waydroid-mpris-bridge/usage.md).
 
 ## Development Checks
 
 ```bash
-python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py
+python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py
 python -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scripts/run-host-mpris-fixture.py scripts/doctor.py scripts/run-disruptive-waydroid-restart-qa.py
 bash -n scripts/install-user-service.sh
 ./scripts/install-user-service.sh --dry-run

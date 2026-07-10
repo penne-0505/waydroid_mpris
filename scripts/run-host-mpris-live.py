@@ -16,7 +16,11 @@ from waydroid_mpris.mpris_service import serve_live  # noqa: E402
 def main() -> None:
     parser = argparse.ArgumentParser(description="Expose the live Waydroid Apple Music probe as MPRIS.")
     parser.add_argument("--adb", default="adb", help="adb executable path.")
-    parser.add_argument("--device", default=None, help="adb device serial, if more than one device is connected.")
+    parser.add_argument(
+        "--device",
+        default=None,
+        help="Pin an ADB device serial instead of discovering the running Waydroid IP.",
+    )
     parser.add_argument("--probe-path", default=DEFAULT_PROBE_PATH, help="Android path to latest_probe.json.")
     parser.add_argument("--poll-interval", type=float, default=1.0, help="Polling interval in seconds.")
     parser.add_argument("--artwork-cache", default=None, help="Directory for cached artwork files.")
