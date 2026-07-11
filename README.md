@@ -1,8 +1,8 @@
 # waydroid_mpris
 
-Waydroid 上の Apple Music を GNOME / `playerctl` から通常の MPRIS player として扱うための bridge です。
+A bridge to treat Apple Music on Waydroid as a standard MPRIS player from GNOME / `playerctl`.
 
-Android companion が Apple Music の MediaSession から曲名、再生状態、操作 capability、artwork を読み、Linux host daemon がそれを `org.mpris.MediaPlayer2.waydroid_mpris` として公開します。
+The Android companion reads the song title, playback state, control capabilities, and artwork from Apple Music's MediaSession, and the Linux host daemon exposes them as `org.mpris.MediaPlayer2.waydroid_mpris`.
 
 ## Current Status
 
@@ -17,7 +17,7 @@ The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verifi
 
 ## Requirements
 
-- Arch 系 Linux with a GNOME / systemd user session. Other distributions are
+- Arch-based Linux with a GNOME / systemd user session. Other distributions are
   currently unverified.
 - Waydroid with Apple Music installed and signed in.
 - Host packages: `python`, `python-dbus`, `python-gobject`, `playerctl`,
