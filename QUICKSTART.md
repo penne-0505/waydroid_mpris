@@ -2,10 +2,19 @@
 
 ## 1. Prerequisites
 
+Supported baseline: Arch 系 Linux with GNOME / systemd user session. Install
+host dependencies and provide an existing Android SDK Platform + Build-Tools:
+
+```bash
+sudo pacman -S --needed python python-dbus python-gobject playerctl android-tools jdk-openjdk
+export ANDROID_SDK_ROOT="$HOME/Android/Sdk"  # when auto-discovery does not match your setup
+```
+
 ```bash
 command -v adb
 command -v playerctl
 command -v python
+python -c 'import dbus, gi'
 waydroid status
 adb devices
 ```
@@ -24,6 +33,11 @@ this computer. For daily use, enable "Always allow from this computer";
 ./scripts/install-android-probe.sh
 ./scripts/open-android-notification-listener-settings.sh
 ```
+
+The helpers resolve the running Waydroid target and never select another ready
+ADB device. Use `--device SERIAL` to override discovery. If a reinstall fails
+with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, manually remove the existing
+companion, reinstall, and enable notification-listener access again.
 
 Enable `Waydroid MPRIS Probe` in the Android settings screen. Start playback in Apple Music.
 
@@ -52,6 +66,11 @@ playerctl --player=waydroid_mpris metadata --format '{{title}}|{{artist}}|{{mpri
 playerctl --player=waydroid_mpris play-pause
 python scripts/doctor.py
 ```
+
+Success means `playerctl --list-all` contains `waydroid_mpris`, status matches
+Apple Music, metadata contains the current title / artist, and doctor reports
+PASS. Automatic recovery after disruptive Waydroid restart has separate
+PARTIAL verification and is not required for initial setup reproduction.
 
 ## 5. Optional Systemd User Service
 

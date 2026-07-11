@@ -3,7 +3,7 @@ title: Waydroid MPRIS bridge usage guide
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-10
+updated_at: 2026-07-11
 references:
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
   - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
@@ -11,23 +11,37 @@ references:
   - "_docs/qa/Core/waydroid-mpris-bridge/verification.md"
   - "_docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md"
   - "_docs/qa/Core/waydroid-adb-auto-recovery/verification.md"
+  - "_docs/intent/Core/reproducible-arch-setup/decision.md"
+  - "_docs/qa/Core/reproducible-arch-setup/test-plan.md"
 related_issues: []
 related_prs: []
 ---
 
 # Waydroid MPRIS bridge usage guide
 
-## Requirements
+## Supported Baseline And Requirements
 
-- EndeavourOS / GNOME user session with D-Bus and MPRIS consumers.
+- Arch 系 Linux / GNOME user session with D-Bus and MPRIS consumers. Other
+  distributions are unverified rather than intentionally rejected.
 - Waydroid running with Apple Music installed and signed in.
-- `adb`, `playerctl`, `python`, and Android SDK build tools.
+- `python`, `python-dbus`, `python-gobject`, `playerctl`, `android-tools`, and a
+  JDK. On Arch: `sudo pacman -S --needed python python-dbus python-gobject
+  playerctl android-tools jdk-openjdk`.
+- An existing Android SDK with an SDK Platform and SDK Build-Tools. SDK install,
+  license acceptance, Android Studio setup, and release signing are outside the
+  repository's setup boundary.
 - ADB authorization for this host inside Waydroid. For daily use, approve the
   USB debugging prompt with "Always allow from this computer" so reconnects do
   not leave the device in `unauthorized`.
 - Android notification listener access for `Waydroid MPRIS Probe`.
 
 ## Build And Install Android Companion
+
+The build resolves the SDK from `ANDROID_HOME`, `ANDROID_SDK_ROOT`,
+`$HOME/Android/Sdk`, or `/opt/android-sdk`, in that order. Set
+`ANDROID_PLATFORM` / `ANDROID_BUILD_TOOLS` to select exact installed versions.
+The known-good 2026-07-11 environment uses JDK 26.0.1, Platform
+`android-36.1`, and Build-Tools `37.0.0`.
 
 ```bash
 ./scripts/build-android-probe.sh
@@ -40,6 +54,18 @@ run the install command again. Then open notification listener settings:
 ```bash
 ./scripts/open-android-notification-listener-settings.sh
 ```
+
+Both install and settings helpers discover the running Waydroid IP target and
+scope commands with `adb -s`. To override discovery, pass `--device SERIAL` to
+each helper. A missing or offline target is connected when possible; a target
+that cannot become ready fails instead of falling back to another connected
+Android device.
+
+Each checkout generates its own ignored debug keystore. If `adb install`
+reports `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, remove the existing
+`dev.penne.waydroidmpris.probe` package manually and run the helper again.
+Uninstall resets app state and notification-listener access, so the helper does
+not perform it automatically; enable the listener again after reinstalling.
 
 Enable `Waydroid MPRIS Probe`, start Apple Music playback, and leave Waydroid
 ADB authorized. The daemon discovers the runtime Waydroid IP and attempts
@@ -110,6 +136,11 @@ running, the resolved ADB target's `device` / `missing` / `offline` /
 `unauthorized` state, missing companion package, notification listener denial,
 missing Apple Music session, absent artwork file, and host MPRIS daemon absence.
 `unauthorized` is reported as requiring operator action.
+
+Initial setup is reproduced when doctor reports PASS and `playerctl` lists
+`waydroid_mpris`, returns Apple Music's current status / metadata, and can send
+`play-pause`. Disruptive restart recovery is tracked separately and is not a
+prerequisite for reproducing the initial bridge setup.
 
 ## Automatic ADB Recovery
 

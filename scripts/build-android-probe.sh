@@ -4,33 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROBE_DIR="$ROOT_DIR/android/probe"
 BUILD_DIR="$PROBE_DIR/build"
-SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/home/penne/Android/Sdk}}"
-
-if [[ ! -d "$SDK_ROOT" ]]; then
-  echo "Android SDK not found: $SDK_ROOT" >&2
-  exit 1
-fi
-
-latest_child() {
-  find "$1" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -V | tail -n 1
-}
-
-PLATFORM_NAME="${ANDROID_PLATFORM:-$(latest_child "$SDK_ROOT/platforms")}"
-BUILD_TOOLS_NAME="${ANDROID_BUILD_TOOLS:-$(latest_child "$SDK_ROOT/build-tools")}"
-
-ANDROID_JAR="$SDK_ROOT/platforms/$PLATFORM_NAME/android.jar"
-BUILD_TOOLS="$SDK_ROOT/build-tools/$BUILD_TOOLS_NAME"
-AAPT2="$BUILD_TOOLS/aapt2"
-D8="$BUILD_TOOLS/d8"
-ZIPALIGN="$BUILD_TOOLS/zipalign"
-APKSIGNER="$BUILD_TOOLS/apksigner"
-
-for tool in "$ANDROID_JAR" "$AAPT2" "$D8" "$ZIPALIGN" "$APKSIGNER"; do
-  if [[ ! -e "$tool" ]]; then
-    echo "Required Android build tool missing: $tool" >&2
-    exit 1
-  fi
-done
+source "$ROOT_DIR/scripts/android-sdk-env.sh"
+resolve_android_sdk
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"/{classes,dex,generated,outputs}

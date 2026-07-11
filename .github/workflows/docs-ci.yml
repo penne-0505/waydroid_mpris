@@ -1,4 +1,4 @@
-name: Docs CI
+name: CI
 
 on:
   push:
@@ -7,6 +7,30 @@ on:
     branches: [ main ]
 
 jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install host native dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-dbus python3-gi gir1.2-glib-2.0 playerctl
+
+      - name: Run host unit tests
+        run: /usr/bin/python3 -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py tests/test_android_setup.py
+
+      - name: Compile Python entry points
+        run: /usr/bin/python3 -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scripts/run-host-mpris-fixture.py scripts/doctor.py scripts/resolve-waydroid-adb-target.py scripts/run-disruptive-waydroid-restart-qa.py
+
+      - name: Check shell helpers
+        run: bash -n scripts/*.sh
+
+      - name: Check generated user service
+        run: PYTHON=/usr/bin/python3 ./scripts/install-user-service.sh --dry-run
+
+      - name: Build Android companion
+        run: ./scripts/build-android-probe.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:

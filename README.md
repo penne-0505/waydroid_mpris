@@ -17,13 +17,38 @@ The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verifi
 
 ## Requirements
 
+- Arch 系 Linux with a GNOME / systemd user session. Other distributions are
+  currently unverified.
 - Waydroid with Apple Music installed and signed in.
-- `adb`, `playerctl`, `python`.
-- Android SDK build tools. By default the build script uses `/home/penne/Android/Sdk`, or `ANDROID_HOME` / `ANDROID_SDK_ROOT` if set.
+- Host packages: `python`, `python-dbus`, `python-gobject`, `playerctl`,
+  `android-tools`, and a JDK.
+- An existing Android SDK containing an SDK Platform and SDK Build-Tools. The
+  repository does not install the SDK or accept Android licenses for you.
 - ADB authorization for this host inside Waydroid. For daily use, allow the USB
   debugging prompt with "Always allow from this computer" so the daemon can
   reconnect after Waydroid or ADB restarts.
 - Notification listener access for `Waydroid MPRIS Probe` inside Waydroid.
+
+Install the host-side packages on Arch:
+
+```bash
+sudo pacman -S --needed python python-dbus python-gobject playerctl android-tools jdk-openjdk
+```
+
+Install the Android SDK Platform and Build-Tools through your existing Android
+SDK setup. The build checks `ANDROID_HOME`, then `ANDROID_SDK_ROOT`, then
+`$HOME/Android/Sdk` and `/opt/android-sdk`. Set an environment variable when
+your SDK lives elsewhere:
+
+```bash
+export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
+```
+
+The latest installed platform and Build-Tools are selected by default. Set
+`ANDROID_PLATFORM` and `ANDROID_BUILD_TOOLS` to select exact installed
+versions. The current verified toolchain is JDK 26.0.1, Android Platform
+`android-36.1`, and Build-Tools `37.0.0`; these are known-good versions, not
+hard minimums.
 
 ## Build And Install
 
@@ -32,6 +57,16 @@ The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verifi
 ./scripts/install-android-probe.sh
 ./scripts/open-android-notification-listener-settings.sh
 ```
+
+The build prints the selected SDK root, platform, and Build-Tools to stderr and
+prints the generated APK path to stdout. Install and settings helpers discover
+the running Waydroid ADB target and scope commands with `adb -s`. Use
+`--device SERIAL` with either helper to override discovery.
+
+If reinstalling reports `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, the existing app
+was signed by another debug key. Remove `dev.penne.waydroidmpris.probe`
+manually, reinstall it, and enable notification-listener access again. The
+helper never uninstalls the app automatically.
 
 Enable `Waydroid MPRIS Probe` in Android notification listener settings, then start Apple Music playback.
 
@@ -100,9 +135,9 @@ For systemd user service setup and troubleshooting details, see [_docs/guide/Cor
 ## Development Checks
 
 ```bash
-python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py
-python -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scripts/run-host-mpris-fixture.py scripts/doctor.py scripts/run-disruptive-waydroid-restart-qa.py
-bash -n scripts/install-user-service.sh
+python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py tests/test_android_setup.py
+python -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scripts/run-host-mpris-fixture.py scripts/doctor.py scripts/resolve-waydroid-adb-target.py scripts/run-disruptive-waydroid-restart-qa.py
+bash -n scripts/*.sh
 ./scripts/install-user-service.sh --dry-run
 ./scripts/build-android-probe.sh
 ./scripts/check-docs.sh
