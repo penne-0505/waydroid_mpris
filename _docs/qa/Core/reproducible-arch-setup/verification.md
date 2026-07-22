@@ -22,7 +22,7 @@ related_prs: []
 
 ## Verification Verdict
 
-**Verdict: PASS**
+Verdict: PASS
 
 全AC / INVに対応するautomated、manual、diff-review evidenceがあり、初期setup再現性にmaterialな未確認事項はない。GitHub-hosted CI job自体はpush前のため未実行だが、workflowに記載した各project commandはlocalでPASSしており、これはrepository変更の完了を妨げる残リスクとは扱わない。
 

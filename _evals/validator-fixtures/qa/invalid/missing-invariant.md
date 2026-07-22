@@ -44,7 +44,7 @@ Use `validate-qa.mjs` in fixture mode.
 
 | ID | Source | Requirement / Invariant | Test Type | Command / File | Expected Evidence | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| AC-001 | fixture | Invalid fixture fails. | validator | `deno run --allow-read scripts/validate-qa.mjs _evals/validator-fixtures/qa/invalid/missing-invariant.md` | Validator exits non-zero. | planned |
+| AC-001 | fixture | Invalid fixture fails. | validator | `deno run --allow-read scripts/validate-qa.mjs --fixture _evals/validator-fixtures/qa/invalid/missing-invariant.md` | Validator exits non-zero. | planned |
 
 ## Manual QA Checklist
 

@@ -36,6 +36,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
@@ -56,20 +58,8 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Check Deno script formatting
-        run: deno fmt --check scripts/*.mjs
-
-      - name: Validate frontmatter
-        run: deno run --allow-read --allow-env --allow-run=git scripts/validate-frontmatter.mjs
-
-      - name: Validate TODO
-        run: deno run --allow-read scripts/validate-todo.mjs
-
-      - name: Validate doc links
-        run: deno run --allow-read --allow-env --allow-run=git scripts/validate-doc-links.mjs
-
-      - name: Validate QA docs
-        run: deno run --allow-read --allow-env --allow-run=git scripts/validate-qa.mjs
-
-      - name: Test validators against fixtures
-        run: deno run --allow-read --allow-env --allow-run scripts/test-validators.mjs
+      - name: Run documentation validators
+        env:
+          DD_SCOPE_BASE: 43dd1b9d17ef4102ee3acacf95c1265056bed801
+          DD_SCOPE_DIFF_FILTER: ACMR
+        run: ./scripts/check-docs.sh

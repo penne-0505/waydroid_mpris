@@ -9,15 +9,63 @@ const TODO_INVALID = [
   "_evals/validator-fixtures/todo/invalid/missing-qa-for-medium.md",
   "_evals/validator-fixtures/todo/invalid/mismatched-heading-id.md",
 ];
+const INTENT_VALID = [
+  "_evals/validator-fixtures/intent/valid",
+];
+const INTENT_INVALID = [
+  "_evals/validator-fixtures/intent/invalid/missing-why.md",
+  "_evals/validator-fixtures/intent/invalid/orphan-invariant.md",
+];
 const QA_VALID = [
   "_evals/validator-fixtures/qa/valid",
 ];
 const QA_INVALID = [
   "_evals/validator-fixtures/qa/invalid/missing-invariant.md",
+  "_evals/validator-fixtures/qa/invalid/v2-missing-decision-scope.md",
   "_evals/validator-fixtures/qa/invalid/status-verdict-mismatch.md",
   "_evals/validator-fixtures/qa/invalid/verification-in-progress-status.md",
   "_evals/validator-fixtures/qa/invalid/verification-missing-test-plan-reference.md",
   "_evals/validator-fixtures/qa/invalid/qa-archive-path.md",
+];
+const FRONTMATTER_CASES = [
+  {
+    fixture: "_evals/validator-fixtures/frontmatter/valid/intent-schema.md",
+    target: "_docs/intent/Workflow/fixture/decision.md",
+    shouldPass: true,
+    forbiddenWarning: "unknown field: intent_schema",
+  },
+  {
+    fixture: "_evals/validator-fixtures/frontmatter/valid/qa-schema.md",
+    target: "_docs/qa/Workflow/fixture/test-plan.md",
+    shouldPass: true,
+    forbiddenWarning: "unknown field: qa_schema",
+  },
+  {
+    fixture:
+      "_evals/validator-fixtures/frontmatter/warning/intent-schema-on-plan.md",
+    target: "_docs/plan/Workflow/fixture/plan.md",
+    shouldPass: true,
+    expectedWarning: "unknown field: intent_schema",
+  },
+  {
+    fixture:
+      "_evals/validator-fixtures/frontmatter/warning/qa-schema-on-intent.md",
+    target: "_docs/intent/Workflow/fixture/decision.md",
+    shouldPass: true,
+    expectedWarning: "unknown field: qa_schema",
+  },
+  {
+    fixture: "_evals/validator-fixtures/frontmatter/warning/unknown-field.md",
+    target: "_docs/reference/Workflow/fixture/reference.md",
+    shouldPass: true,
+    expectedWarning: "unknown field: unexpected_field",
+  },
+  {
+    fixture: "_evals/validator-fixtures/frontmatter/invalid/duplicate-key.md",
+    target: "_docs/reference/Workflow/fixture/reference.md",
+    shouldPass: false,
+    expectedError: "duplicate front matter key: title",
+  },
 ];
 
 const deno = Deno.execPath();
@@ -40,7 +88,22 @@ const validatorArgs = (kind, target) => {
   if (kind === "todo") {
     return ["run", "--allow-read", "scripts/validate-todo.mjs", target];
   }
-  return ["run", "--allow-read", "scripts/validate-qa.mjs", target];
+  if (kind === "intent") {
+    return [
+      "run",
+      "--allow-read",
+      "scripts/validate-intent.mjs",
+      "--fixture",
+      target,
+    ];
+  }
+  return [
+    "run",
+    "--allow-read",
+    "scripts/validate-qa.mjs",
+    "--fixture",
+    target,
+  ];
 };
 
 const testCase = async ({ kind, target, shouldPass }) => {
@@ -86,6 +149,144 @@ const runQaWithScope = async (scopePaths) => {
   return output.code;
 };
 
+const runFrontmatterWithGitScope = async (env) => {
+  const command = new Deno.Command(deno, {
+    args: [
+      "run",
+      "--allow-read",
+      "--allow-env",
+      "--allow-run=git",
+      "scripts/validate-frontmatter.mjs",
+    ],
+    env: { DD_SCOPE_PATHS: "", ...env },
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const output = await command.output();
+  return output.code;
+};
+
+const ensureDir = async (path) => {
+  await Deno.mkdir(path, { recursive: true });
+};
+
+const write = (path, content) => Deno.writeTextFile(path, content);
+
+const runFrontmatterFixtureCase = async ({
+  fixture,
+  target,
+  shouldPass,
+  expectedWarning,
+  forbiddenWarning,
+  expectedError,
+}) => {
+  const repoRoot = Deno.cwd();
+  const temp = await Deno.makeTempDir({ prefix: "docs-dd-frontmatter-" });
+  try {
+    const destination = `${temp}/${target}`;
+    await ensureDir(destination.slice(0, destination.lastIndexOf("/")));
+    await Deno.copyFile(`${repoRoot}/${fixture}`, destination);
+
+    const command = new Deno.Command(deno, {
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-env",
+        "--allow-run=git",
+        `${repoRoot}/scripts/validate-frontmatter.mjs`,
+      ],
+      cwd: temp,
+      env: { DD_SCOPE_PATHS: "", DD_SCOPE_BASE: "" },
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const output = await command.output();
+    const stderr = new TextDecoder().decode(output.stderr);
+    const exitMatches = shouldPass ? output.success : !output.success;
+    const expectedMatches = expectedWarning
+      ? stderr.includes(expectedWarning)
+      : expectedError
+      ? stderr.includes(expectedError)
+      : true;
+    const forbiddenAbsent = forbiddenWarning
+      ? !stderr.includes(forbiddenWarning)
+      : true;
+    const passed = exitMatches && expectedMatches && forbiddenAbsent;
+    const label = `frontmatter ${fixture}`;
+    if (passed) {
+      console.log(`PASS ${label}`);
+      return true;
+    }
+    console.error(`FAIL ${label}: exit ${output.code}`);
+    if (stderr) console.error(stderr.trim());
+    return false;
+  } finally {
+    await Deno.remove(temp, { recursive: true });
+  }
+};
+
+const runScopedTodoQaConsistencyCase = async () => {
+  const repoRoot = Deno.cwd();
+  const temp = await Deno.makeTempDir({ prefix: "docs-dd-qa-scope-" });
+  try {
+    await ensureDir(`${temp}/_docs/qa/Core/scoped-qa`);
+    await ensureDir(`${temp}/_docs/intent/Core/scoped-qa`);
+    await write(
+      `${temp}/TODO.md`,
+      `# Project Task Management Rules
+
+## Backlog
+
+### Core-Feat-1: [Feat] Scoped QA
+
+- **Title**: [Feat] Scoped QA
+- **ID**: Core-Feat-1
+- **Risk**: Medium
+- **Intent**: _docs/intent/Core/scoped-qa/decision.md
+- **QA**: _docs/qa/Core/scoped-qa/test-plan.md
+- **Verification**: None
+`,
+    );
+    await write(
+      `${temp}/_docs/qa/Core/scoped-qa/test-plan.md`,
+      `---
+title: Scoped QA test plan
+status: active
+draft_status: n/a
+qa_status: planned
+risk: Low
+created_at: 2026-01-01
+updated_at: 2026-01-01
+references:
+  - "_docs/intent/Core/scoped-qa/decision.md"
+related_issues: []
+related_prs: []
+---
+
+# Scoped QA test plan
+`,
+    );
+
+    const command = new Deno.Command(deno, {
+      args: [
+        "run",
+        "--allow-read",
+        "--allow-env",
+        `${repoRoot}/scripts/validate-qa.mjs`,
+        "_docs/qa",
+      ],
+      cwd: temp,
+      env: { DD_SCOPE_PATHS: "_docs/qa/Other/not-this.md" },
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const output = await command.output();
+    return output.code !== 0;
+  } finally {
+    await Deno.remove(temp, { recursive: true });
+  }
+};
+
 const scopeCase = async ({ label, scopePaths, shouldPass }) => {
   const code = await runQaWithScope(scopePaths);
   const passed = shouldPass ? code === 0 : code !== 0;
@@ -109,11 +310,20 @@ for (const target of TODO_VALID) {
 for (const target of TODO_INVALID) {
   ok = await testCase({ kind: "todo", target, shouldPass: false }) && ok;
 }
+for (const target of INTENT_VALID) {
+  ok = await testCase({ kind: "intent", target, shouldPass: true }) && ok;
+}
+for (const target of INTENT_INVALID) {
+  ok = await testCase({ kind: "intent", target, shouldPass: false }) && ok;
+}
 for (const target of QA_VALID) {
   ok = await testCase({ kind: "qa", target, shouldPass: true }) && ok;
 }
 for (const target of QA_INVALID) {
   ok = await testCase({ kind: "qa", target, shouldPass: false }) && ok;
+}
+for (const fixtureCase of FRONTMATTER_CASES) {
+  ok = await runFrontmatterFixtureCase(fixtureCase) && ok;
 }
 
 // 対象外パスのみを scope に置くと、invalid fixture は判定されずに pass する。
@@ -128,5 +338,41 @@ ok = await scopeCase({
   scopePaths: SCOPE_FIXTURE,
   shouldPass: false,
 }) && ok;
+
+ok = await (async () => {
+  const code = await runFrontmatterWithGitScope({
+    DD_SCOPE_BASE: "HEAD",
+    DD_SCOPE_DIFF_FILTER: "ACMR",
+  });
+  if (code === 0) {
+    console.log("PASS scope DD_SCOPE_DIFF_FILTER accepts ACMR");
+    return true;
+  }
+  console.error(`FAIL scope DD_SCOPE_DIFF_FILTER accepts ACMR: exit ${code}`);
+  return false;
+})() && ok;
+
+ok = await (async () => {
+  const passed = await runScopedTodoQaConsistencyCase();
+  if (passed) {
+    console.log("PASS qa TODO consistency checks scope-excluded QA refs");
+    return true;
+  }
+  console.error("FAIL qa TODO consistency checks scope-excluded QA refs");
+  return false;
+})() && ok;
+
+ok = await (async () => {
+  const code = await runFrontmatterWithGitScope({
+    DD_SCOPE_BASE: "HEAD",
+    DD_SCOPE_DIFF_FILTER: "A;rm",
+  });
+  if (code !== 0) {
+    console.log("PASS scope DD_SCOPE_DIFF_FILTER rejects invalid values");
+    return true;
+  }
+  console.error("FAIL scope DD_SCOPE_DIFF_FILTER rejects invalid values");
+  return false;
+})() && ok;
 
 if (!ok) Deno.exit(1);

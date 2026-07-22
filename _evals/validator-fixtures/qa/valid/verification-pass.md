@@ -1,5 +1,6 @@
 ---
 title: Fixture QA verification pass
+qa_schema: 2
 status: active
 draft_status: n/a
 qa_status: verified
@@ -28,7 +29,7 @@ Verdict: PASS
 
 | Command / Test | Result | Notes |
 | --- | --- | --- |
-| `deno run --allow-read scripts/validate-qa.mjs _evals/validator-fixtures/qa/valid` | PASS | Valid fixture directory exits 0. |
+| `deno run --allow-read scripts/validate-qa.mjs --fixture _evals/validator-fixtures/qa/valid` | PASS | Valid fixture directory exits 0. |
 
 ## Automated Test Results
 
@@ -42,9 +43,13 @@ Verdict: PASS
 
 - AC-001: Covered by validator fixture execution.
 
+## Decision Conformance
+
+- DEC-001: The accepted fixture preserves the why-first QA structure.
+
 ## Invariant Coverage
 
-- INV-001: Covered by canonical QA fixture path.
+None
 
 ## Deferred / Not Covered
 

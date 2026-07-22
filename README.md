@@ -144,6 +144,12 @@ bash -n scripts/*.sh
 git diff --check
 ```
 
+The docs workflow is validated by the same wrapper in CI. Use
+`docs-inventory` for current-state triage and `docs-template-migration` when
+updating the pinned template release. Template provenance lives in
+`docs-template.lock.json`; the CI validator scope uses `DD_SCOPE_BASE` and
+`DD_SCOPE_DIFF_FILTER=ACMR` for a separate project-local purpose.
+
 ## License
 
 [MIT](LICENSE.txt)

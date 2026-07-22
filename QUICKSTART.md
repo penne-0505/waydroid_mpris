@@ -90,3 +90,32 @@ To pin a specific serial in the service:
 
 Use `--dry-run` to inspect the generated unit before installing it. The static
 sample remains available at `packaging/systemd/waydroid-mpris.service`.
+
+## 6. Development Workflow
+
+Run the project and docs checks before completing a change:
+
+```bash
+python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py \
+  tests/test_adb_recovery.py tests/test_live_failure_mapping.py \
+  tests/test_position_projection.py tests/test_artwork_cache.py \
+  tests/test_android_setup.py
+./scripts/check-docs.sh
+```
+
+Use `docs-inventory` for current-state or stale-doc triage. Multi-file work uses
+`implementation-prep`; Size M or Risk Medium and above also uses Plan, Intent,
+QA test-plan, and `qa-review` before completion.
+
+### Template の継続更新
+
+Template provenance is stored in `docs-template.lock.json`. Update from an
+immutable recommended release tag with the `docs-template-migration` skill,
+and keep compatibility migration separate from strict schema migration.
+
+`v1.0.0` より前に導入され、lock がない repository は、履歴と matching
+upstream blobs から B を一意に復元できる場合だけ legacy bootstrap を使えます。
+中間 release を経由せず、`v1.0.0` 以降の任意の推奨 tag へ直接移行できます。
+
+`DD_SCOPE_BASE` は導入先 repository 内の validator scope を決める値です。
+Template provenance の revision には使わず、tag と full SHA は lock に記録します。

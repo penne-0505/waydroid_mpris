@@ -2,7 +2,7 @@
 
 ## 0. System Metadata
 
-- **Current Max ID**: `Next ID No: 19` (タスク追加時にインクリメント必須)
+- **Current Max ID**: `Next ID No: 21` (タスク追加時にインクリメント必須)
 - **ID Source of Truth**: このファイルの `Next ID No` 行が、全プロジェクトにおける唯一の ID 発番元である。
 
 ## 1. Task Lifecycle (State Machine)
@@ -333,6 +333,32 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
 - **Plan**: _docs/plan/Core/waydroid-adb-auto-recovery/plan.md
 - **Intent**: _docs/intent/Core/waydroid-adb-auto-recovery/decision.md
 - **QA**: _docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md
+- **Verification**: None
+
+### Workflow-Chore-20: [Chore] Review strict docs schema adoption
+
+- **Title**: [Chore] Review strict docs schema adoption
+- **ID**: Workflow-Chore-20
+- **Priority**: P2
+- **Size**: S
+- **Risk**: Low
+- **Area**: Workflow
+- **Dependencies**: []
+- **Goal**: legacy intent / QA recordsをsemantic単位で棚卸しし、将来のstrict schema移行順と旧workflow参照の扱いを決める。
+- **Acceptance Criteria**:
+  - AC-001: schema markerのないproject intent / QA recordsが列挙され、現行・superseded history・fixtureに分類される。
+  - AC-002: incremental-adoption / intentional-omission recordsのactive参照を保ったまま、retentionまたはsupersession方針が記録される。
+  - AC-003: 意味のreviewなしにfrontmatter markerだけを一括追加しない。
+- **Steps**:
+  1. [ ] legacy intent / QA recordsと参照元をinventoryする
+  2. [ ] current decisionごとにschema 2へ移す必要性と順序を決める
+  3. [ ] future template releaseのcompatibility boundaryを確認する
+- **Description**:
+  - Context: v1.0.0 compatibility migrationはPASSしたが、strict schema conversionはsemantic rewriteを伴うためdeferした。
+  - Notes: docs-only review。bulk marker editやruntime変更は行わない。
+- **Plan**: None
+- **Intent**: None
+- **QA**: None
 - **Verification**: None
 
 ---
