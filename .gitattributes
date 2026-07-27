@@ -1,0 +1,2 @@
+# Docs-driven workflow validators are shared tooling, not this project's source.
+scripts/*.mjs linguist-vendored
