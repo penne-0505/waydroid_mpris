@@ -23,8 +23,10 @@ Waydroid must be running, and Apple Music must be installed and signed in. The
 host daemon discovers the running Waydroid IP and runs `adb connect` when its
 target is missing or offline. If Waydroid shows a USB debugging prompt, allow
 this computer. For daily use, enable "Always allow from this computer";
-`unauthorized` requires that operator action and the host player remains
-`Stopped` / no active media until approval.
+Android can still expire that grant after an inactivity window. An
+`unauthorized` target requires operator approval and the host player remains
+`Stopped` / no active media until approval. See the usage guide's "ADB
+authorization timeout" section for diagnosis and prevention.
 
 ## 2. Android Companion
 

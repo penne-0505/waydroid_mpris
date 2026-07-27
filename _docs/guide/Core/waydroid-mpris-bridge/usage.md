@@ -3,7 +3,7 @@ title: Waydroid MPRIS bridge usage guide
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-11
+updated_at: 2026-07-27
 references:
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
   - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
@@ -31,8 +31,9 @@ related_prs: []
   license acceptance, Android Studio setup, and release signing are outside the
   repository's setup boundary.
 - ADB authorization for this host inside Waydroid. For daily use, approve the
-  USB debugging prompt with "Always allow from this computer" so reconnects do
-  not leave the device in `unauthorized`.
+  USB debugging prompt with "Always allow from this computer". Android can
+  still expire an always-allowed host key after an inactivity window; see
+  [ADB authorization timeout](#adb-authorization-timeout).
 - Android notification listener access for `Waydroid MPRIS Probe`.
 
 ## Build And Install Android Companion
@@ -186,6 +187,53 @@ check fails, run
 `./scripts/open-android-notification-listener-settings.sh` and enable `Waydroid
 MPRIS Probe` again.
 
+### ADB authorization timeout
+
+"Always allow from this computer" persists the host key, but it does not
+necessarily make the grant permanent. Android tracks the key's last connection
+time and can expire it after an inactivity window. AOSP's default window is
+604800000 milliseconds (7 days) when `adb_allowed_connection_time` has no
+explicit value; device and Waydroid images can override that value.
+
+After the window expires, the next Waydroid start can produce this sequence:
+
+1. `adb devices -l` reports the Waydroid target as `unauthorized`.
+2. `waydroid_mpris` remains visible but reports `Stopped` with no active track.
+3. The daemon logs that operator approval is required and does not bypass the
+   Android authorization boundary.
+
+Reconnect only the resolved Waydroid target to request the prompt again:
+
+```bash
+adb disconnect 192.168.240.112:5555
+adb connect 192.168.240.112:5555
+adb devices -l
+```
+
+Approve the prompt inside Waydroid and select "Always allow from this
+computer". The daemon rechecks the target automatically; a service restart is
+normally unnecessary. After authorization has recovered, inspect the effective
+override with:
+
+```bash
+adb -s 192.168.240.112:5555 shell settings get global adb_allowed_connection_time
+```
+
+`null` means the platform default applies. For a dedicated local Waydroid
+instance where periodic reapproval is undesirable, open Android's developer
+options inside Waydroid and turn on the blue toggle labeled **"adb
+承認無効のタイムアウト"** shown below.
+
+![Waydroid developer options with the adb authorization timeout disable toggle enabled](assets/adb-authorization-timeout-setting.png)
+
+This changes the security tradeoff by retaining trusted host keys indefinitely,
+so do not apply it to an instance reachable by untrusted hosts.
+
+The AOSP behavior is defined by
+[`ADB_ALLOWED_CONNECTION_TIME`](https://android.googlesource.com/platform/frameworks/base/+/212fc8b3dcd5cdd0b6cdce5c368abe9855ae6886/core/java/android/provider/Settings.java)
+and enforced by
+[`AdbDebuggingManager`](https://android.googlesource.com/platform/frameworks/base/+/1849a4c11671573e5b2815f4b3ea7eb9d24ab98d/services/core/java/com/android/server/adb/AdbDebuggingManager.java).
+
 The host daemon maps ADB read failure to an empty snapshot, so `playerctl`
 should stop seeing the last Apple Music track as `Playing`.
 
@@ -222,7 +270,8 @@ adb connect 192.168.240.112:5555
 - The bridge exposes synchronized MPRIS `Position`, but it does not provide
   lyrics itself. Extensions that show lyrics may still depend on their own
   lyric provider coverage for the current track.
-- Android can require ADB reauthorization after restart. The daemon diagnoses
-  this state but cannot proceed until the user approves the prompt.
+- Android can require ADB reauthorization after restart or after the configured
+  authorization inactivity window. The daemon diagnoses this state but cannot
+  proceed until the user approves the prompt.
 - The Android app is still named `Waydroid MPRIS Probe` internally because the
   probe app became the companion app seed.

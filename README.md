@@ -25,8 +25,9 @@ The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verifi
 - An existing Android SDK containing an SDK Platform and SDK Build-Tools. The
   repository does not install the SDK or accept Android licenses for you.
 - ADB authorization for this host inside Waydroid. For daily use, allow the USB
-  debugging prompt with "Always allow from this computer" so the daemon can
-  reconnect after Waydroid or ADB restarts.
+  debugging prompt with "Always allow from this computer". Android can still
+  expire the grant after an inactivity window; recovery and prevention are
+  documented in the usage guide.
 - Notification listener access for `Waydroid MPRIS Probe` inside Waydroid.
 
 Install the host-side packages on Arch:
