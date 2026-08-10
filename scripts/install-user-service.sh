@@ -134,7 +134,7 @@ Restart=on-failure
 RestartSec=3
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical-session.target
 EOF
 )"
 
@@ -170,10 +170,12 @@ systemctl --user daemon-reload
 echo "Installed systemd user service: $UNIT_FILE"
 
 if [[ "$ENABLE_NOW" -eq 1 ]]; then
-  systemctl --user enable --now "$SERVICE_NAME.service"
+  systemctl --user reenable "$SERVICE_NAME.service"
+  systemctl --user restart "$SERVICE_NAME.service"
   echo "Enabled and started: $SERVICE_NAME.service"
 else
   echo "Next:"
-  echo "  systemctl --user enable --now $SERVICE_NAME.service"
+  echo "  systemctl --user reenable $SERVICE_NAME.service"
+  echo "  systemctl --user restart $SERVICE_NAME.service"
   echo "  systemctl --user status $SERVICE_NAME.service"
 fi
