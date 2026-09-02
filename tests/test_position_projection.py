@@ -65,6 +65,43 @@ class PositionProjectionTest(unittest.TestCase):
         self.assertEqual(held, 124_099_000)
         self.assertEqual(self.projector.position_us(), held)
 
+    def test_default_lead_keeps_published_position_identical(self) -> None:
+        # Covers AC-001
+        self.projector.update(self.session)
+        self.clock.advance(2.0)
+
+        self.assertEqual(
+            self.projector.published_position_us(),
+            self.projector.position_us(),
+        )
+
+    def test_lead_shifts_published_position_forward(self) -> None:
+        # Covers AC-002
+        projector = PositionProjector(clock=self.clock, lead_us=400_000)
+        projector.update(self.session)
+
+        self.assertEqual(
+            projector.published_position_us(),
+            projector.position_us() + 400_000,
+        )
+
+    def test_lead_is_clamped_to_duration(self) -> None:
+        # Covers AC-002
+        projector = PositionProjector(clock=self.clock, lead_us=30_000_000)
+        near_end = copy.deepcopy(self.session)
+        duration_ms = near_end["metadata"]["durationMs"]
+        near_end["playbackState"]["positionMs"] = duration_ms - 100
+        projector.update(near_end)
+
+        self.assertEqual(projector.published_position_us(), duration_ms * 1000)
+
+    def test_lead_does_not_apply_without_track(self) -> None:
+        # Covers AC-002
+        projector = PositionProjector(clock=self.clock, lead_us=400_000)
+        projector.update(None)
+
+        self.assertEqual(projector.published_position_us(), 0)
+
     def test_missing_session_resets_position(self) -> None:
         self.projector.update(self.session)
         self.clock.advance(1.0)

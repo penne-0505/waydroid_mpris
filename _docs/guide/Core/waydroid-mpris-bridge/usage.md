@@ -3,7 +3,7 @@ title: Waydroid MPRIS bridge usage guide
 status: active
 draft_status: n/a
 created_at: 2026-07-09
-updated_at: 2026-07-27
+updated_at: 2026-09-02
 references:
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
   - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
@@ -12,6 +12,7 @@ references:
   - "_docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md"
   - "_docs/qa/Core/waydroid-adb-auto-recovery/verification.md"
   - "_docs/intent/Core/reproducible-arch-setup/decision.md"
+  - "_docs/intent/Core/mpris-position-lead/decision.md"
   - "_docs/qa/Core/reproducible-arch-setup/test-plan.md"
 related_issues: []
 related_prs: []
@@ -93,6 +94,19 @@ other ADB devices are connected. To pin a specific serial instead:
 python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-interval 1.0
 ```
 
+If a lyrics client feels late, the published `Position` can be reported ahead of
+the real playback position. The default is `0`, which reports the true position:
+
+```bash
+python scripts/run-host-mpris-live.py --position-lead-ms 400
+```
+
+The offset applies only to the value other clients read. Seek commands sent back
+to Android still use the real position, so seeking does not drift forward. The
+offset is per-player, so every client on the bus (including rich presence
+integrations) sees the shifted value. See
+`_docs/intent/Core/mpris-position-lead/decision.md` for why this exists.
+
 Check the exposed player:
 
 ```bash
@@ -117,6 +131,10 @@ To pin an explicit serial in the generated service:
 ```bash
 ./scripts/install-user-service.sh --device 192.168.240.112:5555 --enable-now
 ```
+
+The same position offset can be baked into the generated unit with
+`./scripts/install-user-service.sh --position-lead-ms 400`. It is omitted from
+`ExecStart` when left at the default `0`.
 
 Use `./scripts/install-user-service.sh --dry-run` to inspect the generated unit
 without writing it. If you need to reinstall after changing the serial or repo

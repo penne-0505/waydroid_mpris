@@ -11,8 +11,9 @@ Clock = Callable[[], float]
 
 
 class PositionProjector:
-    def __init__(self, clock: Clock | None = None) -> None:
+    def __init__(self, clock: Clock | None = None, lead_us: int = 0) -> None:
         self._clock = clock or time.monotonic
+        self._lead_us = int(lead_us)
         self._track_id: str | None = None
         self._status = "Stopped"
         self._speed = 1.0
@@ -68,6 +69,16 @@ class PositionProjector:
             elapsed_seconds = max(0.0, current_time - self._base_time)
             position_us += int(elapsed_seconds * 1_000_000 * self._speed)
         return self._clamp(position_us)
+
+    # intent: DEC-007 — lead を専用の読み出し口に閉じ込め、seek 基準の position_us へ漏らさない
+    def published_position_us(self, now: float | None = None) -> int:
+        if self._track_id is None:
+            return 0
+        return self._clamp(self.position_us(now) + self._lead_us)
+
+    @property
+    def lead_us(self) -> int:
+        return self._lead_us
 
     def _reset(self, now: float) -> None:
         self._track_id = None
