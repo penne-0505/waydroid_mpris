@@ -1,0 +1,12 @@
+# overlay manifest — 出力面に出さないパスの唯一の情報源（idd init が作成）
+# 行は path prefix。末尾の / はディレクトリ。この file 自身も含める。
+
+_docs/
+_meta/
+TODO.md
+AGENTS.override.md
+CLAUDE.local.md
+overlay.manifest
+docs-template.lock.json
+deno.json
+docs-validators.json

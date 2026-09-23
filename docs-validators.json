@@ -1,0 +1,9 @@
+{
+  "comments": {
+    "exclude": [
+      ".next/",
+      "next-env.d.ts"
+    ],
+    "mode": "overlay"
+  }
+}
