@@ -2,8 +2,8 @@
 title: "QA: doctor.py に machine-readable な --json 出力を追加する"
 status: active
 qa_schema: 5
-qa_status: verified
-risk: Low
+qa_status: partial
+risk: High
 created_at: 2026-09-24
 updated_at: 2026-09-24
 references:
@@ -37,6 +37,9 @@ related_prs: []
 | AC-005 | DEC-043, INV-018 | 外部 command を使わない unit test | command | `/usr/bin/python3 -m unittest discover -s tests -p 'test_*.py'` と、test 本体の目視 | verified |
 | AC-006 | DEC-044 | README の案内行 | diff-review | `README.md` の Diagnostics 節を目視で突き合わせ | verified |
 | AC-007 | DEC-044, INV-019 | unittest 列挙行への新 test 追加 | command | README / QUICKSTART / docs-ci.yml の unittest 行への `grep tests/test_doctor_json.py` | verified |
+| AGENT-001 | DEC-043, INV-018 | agent misbehavior: 新 test が adb / waydroid / playerctl を実行しない | command | `tests/test_doctor_json.py` が `subprocess.run` を raise する mock で外部 command 実行を検知 | verified |
+| ROLLBACK-001 | DEC-041, DEC-044 | rollback / recovery: 差し戻しで実装前の stdout と exit code に戻る | diff-review | `scripts/doctor.py` / `tests/test_doctor_json.py` / `README.md` / `QUICKSTART.md` / `.github/workflows/docs-ci.yml` の差し戻し (runtime state を持たない) | verified |
+| R2-001 | DEC-041, DEC-042, DEC-043, DEC-044 | 記録のみから設計判断を再構成できる | diff-review | TODO `waydroid_mpris-R2-22` | deferred (R2 発動、再構成テストは TODO で追跡) |
 
 ## Rounds
 
@@ -44,9 +47,9 @@ related_prs: []
 
 ### Round 1 (2026-09-24)
 
-- **Intent Delta**: applied: DEC-041, DEC-042, DEC-043, DEC-044
-- **R2**: 非発動 (Intent Delta は既存 DEC の applied のみ、risk Low)
-- **Verdict**: PASS
+- **Intent Delta**: 新設: DEC-041, DEC-042, DEC-043, DEC-044
+- **R2**: PENDING (本 round が DEC を新設し、workflow-sensitive path への変更で risk が High になるため発動。再構成テストは TODO の `waydroid_mpris-R2-22` に積んだ)
+- **Verdict**: PARTIAL (R2 再構成テストが未実施。残リスクと次アクションは本 round と TODO `waydroid_mpris-R2-22` に記録)
 
 実施内容:
 
@@ -57,3 +60,6 @@ related_prs: []
 - `README.md` の Diagnostics 節に `--json` の案内を 1 行足し、README / QUICKSTART / docs-ci.yml の unittest 列挙行に `tests/test_doctor_json.py` を足した (DEC-044)。`AGENTS.md` は触っていない。
 - 検証: AC-001 は `--json` の stdout が `json.tool` を通り `^(PASS|WARN|FAIL) ` 行を含まないことで確認した (rc=0)。AC-002 は live の人間可読 13 check と JSON の name / status / detail が一致することで確認した。AC-003 は live (全 PASS, rc=0, ok=true) と PATH を空にした FAIL 実行 (rc=1, ok=false) で両側を確認した。AC-004 は `--json` 無しの stdout / stderr / rc が実装前後で byte-identical であることを diff で確認した。AC-005 は discover 44 tests が緑であることで確認した。AC-006 / AC-007 は README の案内行と 3 file の列挙行で確認した (各 1 箇所)。records scope の `check-docs.sh` は既知の TODO.md 赤 (Core-Test-17) のみで、本 lane の成果物 3 file は緑である。
 - public 4 check (unittest 44 tests / py_compile / shell syntax / install dry-run) は緑である。
+- agent misbehavior の確認: 新 test は `scripts.doctor.shutil.which` を None に固定し、`subprocess.run` を raise する mock を当てて外部 command の実行を検知する (AGENT-001 / INV-018)。doctor の check 収集と条件評価の flow は変えていない。
+- rollback / recovery の確認: 本差分は `scripts/doctor.py` / `tests/test_doctor_json.py` / `README.md` / `QUICKSTART.md` / `.github/workflows/docs-ci.yml` の 5 file に閉じ、runtime state / migration / data を持たない。差し戻しで `--json` flag が消え、AC-004 の byte-identical な実装前出力に戻る (ROLLBACK-001)。変更前の `scripts/doctor.py` に `--json` が無いことは `git show HEAD~1:scripts/doctor.py` で確認した。
+- review fix (1 巡目): path-based risk floor に合わせて本 qa.md の risk を Low から High へ上げた (F-1)。Round 1 の Intent Delta を三値契約の「新設」に直し (F-3)、R2 を `非発動` から `PENDING` に直して TODO に `waydroid_mpris-R2-22` を積んだ (F-2)。agent misbehavior と rollback / recovery の観点を Checks と本 round に足した (F-4)。
