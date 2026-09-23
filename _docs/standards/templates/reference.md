@@ -1,12 +1,11 @@
 ---
 title: Reference Title
 status: active  # allowed: proposed | active | superseded | obsolete
-draft_status: n/a  # allowed: idea | exploring | paused | n/a
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
 references:
   - "_docs/intent/<Area>/<slug>/decision.md"
-  - "_docs/qa/<Area>/<slug>/verification.md"
+  - "_docs/qa/<Area>/<slug>/qa.md"
 related_issues: []
 related_prs: []
 ---
@@ -31,6 +30,6 @@ related_prs: []
 - 補足事項やバージョン差分
 
 ## Verification
-- 関連 QA: `_docs/qa/<Area>/<slug>/test-plan.md`
-- 検証証跡: `_docs/qa/<Area>/<slug>/verification.md`
-- API / 仕様の保証範囲が変わる場合は、verification の verdict と残リスクを参照する
+- 関連 QA: `_docs/qa/<Area>/<slug>/qa.md`
+- 検証証跡: `_docs/qa/<Area>/<slug>/qa.md`
+- API / 仕様の保証範囲が変わる場合は、該当 qa.md の round (verdict・残リスク) を参照する

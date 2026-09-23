@@ -1,9 +1,9 @@
 ---
 name: docs-template-migration
-description: Integrate a newer pinned release of this docs-driven template into an existing customized repository. Use after first-time adoption when a recommended upstream tag changes standards, validators, paired skills, hooks, CI, template meta-work, or document schemas. Do not use for first-time adoption or project-local schema edits without an upstream release.
+description: Integrate a newer pinned release of this intent-driven template into an existing customized repository. Use after first-time adoption when a recommended upstream tag changes standards, validators, paired skills, hooks, CI, template meta-work, or document schemas. Do not use for first-time adoption or project-local schema edits without an upstream release.
 ---
 
-# Docs-Driven Template Migration
+# Intent-Driven Template Migration
 
 Treat every update as a provenance-locked three-way migration:
 
@@ -141,10 +141,17 @@ and prove that each project customization was preserved or intentionally
 changed. Run the repository's QA review when required and record only commands
 actually executed.
 
+Run the project's own build, typecheck, lint, and test gates in addition to the
+documentation wrapper. Upstream files land inside the project's source tree and
+enter its toolchain, so a green documentation gate does not prove the project
+still builds. Report the documentation gate and the project gates as separate
+results; never let one stand in for the other.
+
 Completion criterion: no inventory path is unresolved, no parallel branch or
 post-cutoff file was silently included, failures are not new or unexplained,
-the lock resolves to the integrated `U` commit, and each migration-stage verdict
-matches the evidence.
+both the documentation gate and the project's own build gates are reported with
+their actual results, the lock resolves to the integrated `U` commit, and each
+migration-stage verdict matches the evidence.
 
 ## Reporting Boundary
 

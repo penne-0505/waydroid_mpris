@@ -1,19 +1,18 @@
 ---
 title: Plan Title
 status: proposed  # allowed: proposed | active | superseded | obsolete
-draft_status: n/a  # allowed: idea | exploring | paused | n/a
 created_at: YYYY-MM-DD
 updated_at: YYYY-MM-DD
 references:
   - "_docs/intent/<Area>/<slug>/decision.md"
-  - "_docs/qa/<Area>/<slug>/test-plan.md"
+  - "_docs/qa/<Area>/<slug>/qa.md"
 related_issues: []
 related_prs: []
 ---
 
 <!-- Canonical path: _docs/plan/<Area>/<slug>/plan.md -->
 <!-- 合意済み仕様のみを記載。Scope / Non-Goals / QA Plan を網羅し、破壊的変更時は status や updated_at を必ず更新してください。 -->
-<!-- Size >= M では _docs/qa/<Area>/<slug>/test-plan.md も作成してください。 -->
+<!-- Risk >= Medium では _docs/qa/<Area>/<slug>/qa.md を実装前に qa_status: planned で作成してください。 -->
 
 ## Overview
 - 計画の概要
@@ -33,7 +32,7 @@ related_prs: []
 - 実装タスク一覧
 
 ## QA Plan
-- QA document: `_docs/qa/<Area>/<slug>/test-plan.md`
+- QA document: `_docs/qa/<Area>/<slug>/qa.md`
 - Risk level: Low | Medium | High | Critical
 - Test strategy:
   - Unit:
@@ -43,7 +42,7 @@ related_prs: []
   - Validator / static check:
 - Acceptance criteria と、該当する intent-derived invariant をどの確認手段に紐づけるか。
 - 実装が影響する `DEC-xxx` と、その `Why` / `Change freedom` の review 方針。
-- `Size >= M` または `Risk >= Medium` の場合、実装前または実装中に QA test-plan を作成する。
+- `Risk >= Medium` の場合、実装前に qa.md を `qa_status: planned` で作成する。
 - Risk High / Critical の場合は rollback / recovery / data safety / security の確認観点を含める。
 
 ## Deployment / Rollout

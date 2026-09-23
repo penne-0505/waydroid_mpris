@@ -106,8 +106,9 @@ python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py \
 ```
 
 Use `docs-inventory` for current-state or stale-doc triage. Multi-file work uses
-`implementation-prep`; Size M or Risk Medium and above also uses Plan, Intent,
-QA test-plan, and `qa-review` before completion.
+`prep` before implementation and `close` after. `Size >= M` also requires a
+Plan and `Risk >= Medium` requires a `qa.md` with `qa_status: planned` created
+before implementation.
 
 ### Template の継続更新
 

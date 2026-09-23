@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "source": "https://github.com/penne-0505/docs_driven_dev_template.git",
+  "source": "https://github.com/penne-0505/intent_driven_dev_template.git",
   "revision": {
-    "tag": "v1.0.0",
+    "tag": "v2.5.3",
     "commit": "REPLACE_WITH_THE_TAGS_FULL_40_CHARACTER_COMMIT_SHA"
   }
 }
