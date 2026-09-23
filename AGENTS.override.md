@@ -67,11 +67,9 @@ IDD の作業規範。**この file が workspace 規範の正本**で、overlay
 
 ## コードコメント
 
-- コード内のコメントは allowlist のみ: intent ポインタ、`// Covers AC-xxx / INV-xxx`、shebang、
-  pragma、license header。散文コメント・TODO コメントは禁止。
-- 設計判断を体現するコードには `// intent: DEC-00X — <因果の一行>` でポインタを残す。
-  strict invariant を体現する場合だけ `// intent-invariant: INV-00X — <破れない結果>` を使う。
-- 書きたい散文があるなら、それは DEC に書くべき why か、書かなくてよい how である。
+- コードのコメントは上段（公開側 AGENTS.md）の規約に従う。
+- コードに DEC / INV / AC / intent を書かない。統治対象のパス・シンボルは DEC の Anchors 節に、
+  AC / INV とテストの対応は qa.md の Checks に書く。
   分解判定規則: 「コードを消して書き直したら失われる情報か？」
 
 ## ドキュメント

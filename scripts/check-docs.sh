@@ -9,4 +9,7 @@ deno run --allow-read --allow-env --allow-run=git scripts/validate-intent.mjs
 deno run --allow-read --allow-env --allow-run=git scripts/validate-qa.mjs
 deno run --allow-read --allow-write --allow-env --allow-run scripts/test-validators.mjs
 deno run --allow-read --allow-run=git scripts/test-agent-workflow-hook.mjs
-deno run --allow-read scripts/test-agent-workflow-smoke.mjs
+# overlay 構成では root の AGENTS.md / QUICKSTART.md はプロジェクトのもので、template の出荷物ではない
+if [ ! -f AGENTS.override.md ]; then
+  deno run --allow-read scripts/test-agent-workflow-smoke.mjs
+fi
