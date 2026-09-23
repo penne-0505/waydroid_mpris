@@ -19,8 +19,15 @@ if [ -z "${DD_SCOPE_BASE:-}" ] && [ -f docs-template.lock.json ]; then
   if [ -n "$adopted" ]; then export DD_SCOPE_BASE="$adopted"; fi
 fi
 
-deno fmt --check scripts/*.ts
-deno check scripts/*.ts
+# only the template's own scripts: a project that adopted the overlay may keep its own TypeScript in scripts/
+template_ts=()
+for f in scripts/*.ts; do
+  case "$(basename "$f")" in
+    agent-workflow-hook.ts | generate-doc-probe.ts | scope.ts | test-agent-workflow-hook.ts | test-agent-workflow-smoke.ts | test-validators.ts | validate-*.ts) template_ts+=("$f") ;;
+  esac
+done
+deno fmt --check "${template_ts[@]}"
+deno check "${template_ts[@]}"
 deno test scripts/validate-comments.test.ts
 deno run --allow-read --allow-env --allow-run=git scripts/validate-frontmatter.ts
 deno run --allow-read scripts/validate-todo.ts "$todo_file"
