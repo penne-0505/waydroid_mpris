@@ -9,7 +9,6 @@ references:
   - "_docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md"
   - "_docs/qa/Core/waydroid-adb-auto-recovery/verification.md"
   - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
-  - "_docs/guide/Core/waydroid-mpris-bridge/usage.md"
 related_issues: []
 related_prs: []
 ---
