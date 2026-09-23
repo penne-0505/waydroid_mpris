@@ -1,10 +1,10 @@
 // Deno版 TODO.md validator: npm / remote import 依存なし
 
 const TODO_FILE = Deno.args[0] ?? "TODO.md";
-const PRIORITIES = ["P0", "P1", "P2", "P3"];
-const SIZES = ["XS", "S", "M", "L", "XL"];
-const LARGE_SIZES = ["M", "L", "XL"];
-const RISKS = ["Low", "Medium", "High", "Critical"];
+const PRIORITIES = ["P0", "P1", "P2", "P3"] as const;
+const SIZES = ["XS", "S", "M", "L", "XL"] as const;
+const LARGE_SIZES = ["M", "L", "XL"] as const;
+const RISKS = ["Low", "Medium", "High", "Critical"] as const;
 const CATEGORIES = [
   "Feat",
   "Enhance",
@@ -14,7 +14,8 @@ const CATEGORIES = [
   "Doc",
   "Test",
   "Chore",
-];
+  "R2",
+] as const;
 const REQUIRED_FIELDS = [
   "Title",
   "ID",
@@ -30,31 +31,66 @@ const REQUIRED_FIELDS = [
   "Plan",
   "Intent",
   "QA",
-  "Verification",
-];
-const SECTION_NAMES = ["Inbox", "Backlog", "Ready", "In Progress"];
+] as const;
+const SECTION_NAMES = ["Inbox", "Backlog", "Ready", "In Progress"] as const;
+const DOC_PATH_FIELDS = ["Plan", "Intent", "QA"] as const;
+
+type Priority = (typeof PRIORITIES)[number];
+type Size = (typeof SIZES)[number];
+type Risk = (typeof RISKS)[number];
+type Category = (typeof CATEGORIES)[number];
+type SectionName = (typeof SECTION_NAMES)[number];
+type RequiredField = (typeof REQUIRED_FIELDS)[number];
+type DocPathField = (typeof DOC_PATH_FIELDS)[number];
+
+type Task = {
+  section: SectionName;
+  lineNo: number;
+  heading: string;
+  fields: Record<string, string>;
+  headingId?: string;
+  headingIdCategory?: string;
+  headingCategory?: string;
+  headingTitle?: string;
+  headingError?: string;
+};
+
+type TitleParts = {
+  category: string;
+  title: string;
+};
+
+type ValidateDocPathParams = {
+  task: Task;
+  label: string;
+  field: DocPathField;
+  value: string | undefined;
+  mustExist: boolean;
+  errors: string[];
+};
+
 const CATEGORY_PATTERN = CATEGORIES.join("|");
 const ID_RE = new RegExp(
-  `^([A-Za-z][A-Za-z0-9-]*)-(${CATEGORY_PATTERN})-([1-9]\\d*)$`,
+  `^([A-Za-z][A-Za-z0-9_-]*)-(${CATEGORY_PATTERN})-([1-9]\\d*)$`,
 );
 const TASK_HEADING_RE = new RegExp(
-  `^###\\s+([A-Za-z][A-Za-z0-9-]*-(${CATEGORY_PATTERN})-[1-9]\\d*):\\s+\\[(${CATEGORY_PATTERN})\\]\\s+(.+?)\\s*$`,
+  `^###\\s+([A-Za-z][A-Za-z0-9_-]*-(${CATEGORY_PATTERN})-[1-9]\\d*):\\s+\\[(${CATEGORY_PATTERN})\\]\\s+(.+?)\\s*$`,
 );
 const FIELD_RE =
   /^-\s+(?:\*\*([A-Za-z][A-Za-z ]*)\*\*|([A-Za-z][A-Za-z ]*)):\s*(.*)$/;
-const PATH_PATTERNS = {
+const PATH_PATTERNS: Record<DocPathField, RegExp> = {
   Plan:
-    /^_docs\/plan\/([A-Za-z][A-Za-z0-9-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/plan\.md$/,
+    /^_docs\/plan\/([A-Za-z][A-Za-z0-9_-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/plan\.md$/,
   Intent:
-    /^_docs\/intent\/([A-Za-z][A-Za-z0-9-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/decision\.md$/,
+    /^_docs\/intent\/([A-Za-z][A-Za-z0-9_-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/decision\.md$/,
   QA:
-    /^_docs\/qa\/([A-Za-z][A-Za-z0-9-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/test-plan\.md$/,
-  Verification:
-    /^_docs\/qa\/([A-Za-z][A-Za-z0-9-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/verification\.md$/,
+    /^_docs\/qa\/([A-Za-z][A-Za-z0-9_-]*)\/(?:([a-z0-9]+(?:-[a-z0-9]+)*)\/qa\.md|maintenance\.md)$/,
 };
+const DEDICATED_QA_RE =
+  /^_docs\/qa\/([A-Za-z][A-Za-z0-9_-]*)\/([a-z0-9]+(?:-[a-z0-9]+)*)\/qa\.md$/;
 
-const stripCodeBlocks = (src) => {
-  const output = [];
+const stripCodeBlocks = (src: string): string => {
+  const output: string[] = [];
   let inFence = false;
   for (const line of src.split(/\r?\n/)) {
     if (/^\s*```/.test(line)) {
@@ -67,7 +103,7 @@ const stripCodeBlocks = (src) => {
   return output.join("\n");
 };
 
-const normalizeInlineCode = (value) => {
+const normalizeInlineCode = (value: string): string => {
   const trimmed = value.trim();
   if (trimmed.startsWith("`") && trimmed.endsWith("`")) {
     return trimmed.slice(1, -1).trim();
@@ -75,17 +111,17 @@ const normalizeInlineCode = (value) => {
   return trimmed;
 };
 
-const normalizeSectionName = (value) =>
+const normalizeSectionName = (value: string): string =>
   value.replace(/\s*\(.*\)\s*$/, "").trim();
 
-const parseTasks = (src) => {
+const parseTasks = (src: string): Task[] => {
   const lines = src.split(/\r?\n/);
-  const tasks = [];
-  let currentSection = null;
-  let current = null;
-  let currentField = null;
+  const tasks: Task[] = [];
+  let currentSection: SectionName | null = null;
+  let current: Task | null = null;
+  let currentField: string | null = null;
 
-  const flush = () => {
+  const flush = (): void => {
     if (current) tasks.push(current);
     current = null;
     currentField = null;
@@ -97,18 +133,18 @@ const parseTasks = (src) => {
     const section = line.match(/^##\s+(.+?)\s*$/);
     if (section) {
       flush();
-      currentSection = normalizeSectionName(section[1]);
+      currentSection = normalizeSectionName(section[1]) as SectionName;
       continue;
     }
 
-    if (!SECTION_NAMES.includes(currentSection ?? "")) continue;
+    if (!SECTION_NAMES.includes(currentSection as SectionName)) continue;
 
     const heading = line.match(/^###\s+(.+?)\s*$/);
     if (heading) {
       flush();
       const headingMatch = line.match(TASK_HEADING_RE);
       current = {
-        section: currentSection,
+        section: currentSection as SectionName,
         lineNo,
         heading: heading[1].trim(),
         fields: {},
@@ -143,7 +179,7 @@ const parseTasks = (src) => {
   return tasks;
 };
 
-const parseDependencies = (value) => {
+const parseDependencies = (value: string): string[] | null => {
   const normalized = normalizeInlineCode(value);
   if (normalized === "[]") return [];
   if (!normalized.startsWith("[") || !normalized.endsWith("]")) return null;
@@ -152,7 +188,7 @@ const parseDependencies = (value) => {
   return inner.split(",").map((item) => item.trim()).filter(Boolean);
 };
 
-const fileExists = async (path) => {
+const fileExists = async (path: string): Promise<boolean> => {
   try {
     const stat = await Deno.stat(path);
     return stat.isFile;
@@ -162,18 +198,26 @@ const fileExists = async (path) => {
   }
 };
 
-const add = (list, message) => list.push(message);
+const add = (list: string[], message: string): void => {
+  list.push(message);
+};
 
-const report = (prefix, messages, logger) => {
+const report = (
+  prefix: string,
+  messages: string[],
+  logger: (message: string) => void,
+): void => {
   if (!messages.length) return;
   logger(`${prefix}: ${TODO_FILE}`);
   for (const message of messages) logger(`  - ${message}`);
 };
 
-const riskAtLeast = (risk, floor) =>
-  RISKS.indexOf(risk) >= RISKS.indexOf(floor);
+const riskAtLeast = (risk: string, floor: Risk): boolean =>
+  (RISKS as readonly string[]).indexOf(risk) >=
+    (RISKS as readonly string[]).indexOf(floor);
 
-const isNone = (value) => normalizeInlineCode(value ?? "") === "None";
+const isNone = (value: string | undefined): boolean =>
+  normalizeInlineCode(value ?? "") === "None";
 
 const validateDocPath = async ({
   task,
@@ -182,7 +226,7 @@ const validateDocPath = async ({
   value,
   mustExist,
   errors,
-}) => {
+}: ValidateDocPathParams): Promise<void> => {
   const normalized = normalizeInlineCode(value ?? "");
   if (normalized === "" || normalized === "None") return;
 
@@ -202,20 +246,24 @@ const validateDocPath = async ({
   }
 };
 
-const acceptanceCriteriaIds = (value) =>
+const acceptanceCriteriaIds = (value: string | undefined): string[] =>
   [...(value ?? "").matchAll(/\bAC-\d{3}\b/g)].map((match) => match[0]);
 
-const titleParts = (title) => {
-  const match = title.match(/^\[([A-Za-z]+)\]\s+(.+)$/);
+const titleParts = (title: string): TitleParts | null => {
+  const match = title.match(/^\[([A-Za-z][A-Za-z0-9]*)\]\s+(.+)$/);
   if (!match) return null;
   return { category: match[1], title: match[2].trim() };
 };
 
-const taskLabel = (task) =>
+const taskLabel = (task: Task): string =>
   task.headingId ?? task.fields.ID ?? task.fields.Title ??
     `line ${task.lineNo}: ${task.heading}`;
 
-const validateHeadingConsistency = (task, label, errors) => {
+const validateHeadingConsistency = (
+  task: Task,
+  label: string,
+  errors: string[],
+): void => {
   if (task.headingError) {
     add(errors, `${label}: ${task.headingError}`);
     return;
@@ -242,11 +290,11 @@ const validateHeadingConsistency = (task, label, errors) => {
   }
 };
 
-const run = async () => {
+const run = async (): Promise<void> => {
   const src = await Deno.readTextFile(TODO_FILE);
   const stripped = stripCodeBlocks(src);
-  const errors = [];
-  const warnings = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
   const nextMatch = stripped.match(/Next ID No:\s*(\d+)/);
   if (!nextMatch) {
@@ -267,7 +315,7 @@ const run = async () => {
   }
 
   const tasks = parseTasks(stripped);
-  const ids = new Set();
+  const ids = new Set<string>();
   let maxIdNo = 0;
 
   for (const task of tasks) {
@@ -284,7 +332,9 @@ const run = async () => {
     const parsedTitle = titleParts(title);
     if (!parsedTitle) {
       add(errors, `${label}: Title must match "[Category] Title"`);
-    } else if (!CATEGORIES.includes(parsedTitle.category)) {
+    } else if (
+      !(CATEGORIES as readonly string[]).includes(parsedTitle.category)
+    ) {
       add(
         errors,
         `${label}: Title category must be one of ${CATEGORIES.join(", ")}`,
@@ -316,17 +366,17 @@ const run = async () => {
     }
 
     const priority = task.fields.Priority;
-    if (priority && !PRIORITIES.includes(priority)) {
+    if (priority && !(PRIORITIES as readonly string[]).includes(priority)) {
       add(errors, `${label}: Priority must be one of ${PRIORITIES.join(", ")}`);
     }
 
     const size = task.fields.Size;
-    if (size && !SIZES.includes(size)) {
+    if (size && !(SIZES as readonly string[]).includes(size)) {
       add(errors, `${label}: Size must be one of ${SIZES.join(", ")}`);
     }
 
     const risk = task.fields.Risk;
-    if (risk && !RISKS.includes(risk)) {
+    if (risk && !(RISKS as readonly string[]).includes(risk)) {
       add(errors, `${label}: Risk must be one of ${RISKS.join(", ")}`);
     }
 
@@ -363,7 +413,8 @@ const run = async () => {
     }
     if (
       size && risk &&
-      (LARGE_SIZES.includes(size) || riskAtLeast(risk, "Medium")) &&
+      ((LARGE_SIZES as readonly string[]).includes(size) ||
+        riskAtLeast(risk, "Medium")) &&
       acIds.length < 2
     ) {
       add(
@@ -383,8 +434,10 @@ const run = async () => {
       );
     }
 
-    const mustExist = ["Ready", "In Progress"].includes(task.section);
-    for (const field of ["Plan", "Intent", "QA", "Verification"]) {
+    const mustExist = (["Ready", "In Progress"] as readonly string[]).includes(
+      task.section,
+    );
+    for (const field of DOC_PATH_FIELDS) {
       await validateDocPath({
         task,
         label,
@@ -395,39 +448,30 @@ const run = async () => {
       });
     }
 
-    if (size && LARGE_SIZES.includes(size)) {
+    const qaValue = normalizeInlineCode(task.fields.QA ?? "");
+    if (isNone(task.fields.QA)) {
+      add(
+        errors,
+        `${label}: QA must be a qa.md or maintenance.md path (None is not allowed)`,
+      );
+    }
+    const dedicatedQa = DEDICATED_QA_RE.test(qaValue);
+    if (size && (LARGE_SIZES as readonly string[]).includes(size)) {
       if (isNone(task.fields.Plan)) {
         add(errors, `${label}: Size ${size} requires Plan`);
       }
-      if (isNone(task.fields.Intent)) {
-        add(errors, `${label}: Size ${size} requires Intent`);
-      }
-      if (isNone(task.fields.QA)) {
-        add(errors, `${label}: Size ${size} requires QA`);
+      if (qaValue !== "" && !isNone(task.fields.QA) && !dedicatedQa) {
+        add(
+          errors,
+          `${label}: Size ${size} requires a dedicated qa.md (not maintenance.md)`,
+        );
       }
     }
     if (risk && riskAtLeast(risk, "Medium")) {
-      if (isNone(task.fields.Intent)) {
-        add(errors, `${label}: Risk ${risk} requires Intent`);
-      }
-      if (isNone(task.fields.QA)) {
-        add(errors, `${label}: Risk ${risk} requires QA`);
-      }
-    }
-    if (risk && riskAtLeast(risk, "High")) {
-      if (isNone(task.fields.Plan)) {
-        add(errors, `${label}: Risk ${risk} requires Plan`);
-      }
-      if (isNone(task.fields.Intent)) {
-        add(errors, `${label}: Risk ${risk} requires Intent`);
-      }
-      if (isNone(task.fields.QA)) {
-        add(errors, `${label}: Risk ${risk} requires QA`);
-      }
-      if (task.section === "In Progress" && isNone(task.fields.Verification)) {
+      if (qaValue !== "" && !isNone(task.fields.QA) && !dedicatedQa) {
         add(
-          warnings,
-          `${label}: In Progress High/Critical risk task should already have Verification`,
+          errors,
+          `${label}: Risk ${risk} requires a dedicated qa.md (not maintenance.md)`,
         );
       }
     }
@@ -444,7 +488,7 @@ const run = async () => {
   }
 };
 
-run().catch((err) => {
-  console.error(err);
+run().catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : String(err));
   Deno.exit(1);
 });

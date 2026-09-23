@@ -6,5 +6,9 @@
     "commit": "f71e9ab20466ea2972158334261f5ae2b2265754"
   },
   "adopted_base": "83081759df50c744d6e949abe7cb00c0775eb86b",
-  "adopted_at": "2026-09-23T13:30:16.923Z"
+  "adopted_at": "2026-09-23T13:30:16.923Z",
+  "validators_from": {
+    "source": "pi-web-idd",
+    "commit": "5df97435ecfb7c3a83d2e782c508fd1b1fe399ff"
+  }
 }

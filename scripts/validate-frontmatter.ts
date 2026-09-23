@@ -1,11 +1,29 @@
 // Deno版バリデータ: npm / remote import 依存なしで front-matter と stale ロジックを検証
 
-import { loadScope, makeInScope } from "./scope.mjs";
+import { loadScope, makeInScope } from "./scope.ts";
+
+type YamlValue = string | number | boolean | YamlValue[];
+type FrontMatter = Record<string, YamlValue>;
+
+type FrontMatterParseResult = {
+  attrs: FrontMatter | null;
+  error: string | null;
+};
+
+type FileReport = {
+  file: string;
+  messages: string[];
+};
+
+type ParseArgsResult = {
+  roots: string[];
+  fixtureMode: boolean;
+};
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const STALE_DAYS = 30;
-const RISKS = ["Low", "Medium", "High", "Critical"];
+const RISKS = ["Low", "Medium", "High", "Critical"] as const;
 const QA_STATUS_VALUES = [
   "planned",
   "in-progress",
@@ -13,34 +31,49 @@ const QA_STATUS_VALUES = [
   "partial",
   "failed",
   "blocked",
-];
+] as const;
 const REQUIRED_KEYS = [
   "title",
   "status",
-  "draft_status",
   "created_at",
   "updated_at",
   "references",
   "related_issues",
   "related_prs",
-];
+] as const;
 const REQUIRED_SCALARS = [
   "title",
   "status",
-  "draft_status",
   "created_at",
   "updated_at",
-];
-const STATUS_VALUES = ["proposed", "active", "superseded", "obsolete"];
-const DRAFT_STATUS_VALUES = ["idea", "exploring", "paused", "n/a"];
+] as const;
+const STATUS_VALUES = ["proposed", "active", "superseded", "obsolete"] as const;
+const DRAFT_STATUS_VALUES = ["idea", "exploring", "paused", "n/a"] as const;
+// 許可キーは path 種別ごとに閉じる。共通キーへ混ぜると、schema marker が
+// 種別を跨いで黙認される（QA 文書に intent_schema があっても通る）。
+// draft_status は legacy 文書の受理のためだけに許可する (新 schema では書かない)。
+const COMMON_KEYS = new Set<string>([...REQUIRED_KEYS, "draft_status"]);
+const DRAFT_ONLY_KEYS = new Set([
+  "stale_exempt_until",
+  "stale_exempt_reason",
+  "stale_extensions",
+]);
+const QA_ONLY_KEYS = new Set(["qa_status", "risk", "qa_schema"]);
+const INTENT_ONLY_KEYS = new Set(["intent_schema"]);
+// schema marker の許容値は validate-qa.ts の QA_SCHEMAS / validate-intent.ts の
+// INTENT_SCHEMAS と同期させる。片側だけ更新すると、qa/intent validator が要求する
+// 現行 schema を frontmatter validator が拒否し、新規文書が書けなくなる。
+const QA_SCHEMA_VALUES: readonly number[] = [2, 3, 4, 5];
+const INTENT_SCHEMA_VALUES: readonly number[] = [2, 3];
 
-const isStringArray = (val) =>
+const isStringArray = (val: unknown): val is string[] =>
   Array.isArray(val) && val.every((v) => typeof v === "string");
-const isIntegerArray = (val) =>
+const isIntegerArray = (val: unknown): val is number[] =>
   Array.isArray(val) && val.every((v) => Number.isInteger(v));
-const isNonNegativeInt = (val) => Number.isInteger(val) && val >= 0;
+const isNonNegativeInt = (val: unknown): val is number =>
+  typeof val === "number" && Number.isInteger(val) && val >= 0;
 
-const parseDate = (value) => {
+const parseDate = (value: unknown): Date | null => {
   if (typeof value !== "string" || !DATE_RE.test(value)) return null;
   const [year, month, day] = value.split("-").map(Number);
   const d = new Date(Date.UTC(year, month - 1, day));
@@ -54,19 +87,21 @@ const parseDate = (value) => {
   return d;
 };
 
-const diffDays = (from, to) =>
+const diffDays = (from: Date, to: Date): number =>
   Math.floor((to.getTime() - from.getTime()) / MS_PER_DAY);
-const normalizePath = (path) => path.replaceAll("\\", "/");
-const isInArchives = (path) =>
+const normalizePath = (path: string): string => path.replaceAll("\\", "/");
+const isInArchives = (path: string): boolean =>
   normalizePath(path).split("/").includes("archives");
-const isDraftPath = (path) => normalizePath(path).split("/").includes("draft");
-const isQaPath = (path) => normalizePath(path).split("/").includes("qa");
-const isIntentPath = (path) =>
+const isDraftPath = (path: string): boolean =>
+  normalizePath(path).split("/").includes("draft");
+const isQaPath = (path: string): boolean =>
+  normalizePath(path).split("/").includes("qa");
+const isIntentPath = (path: string): boolean =>
   normalizePath(path).split("/").includes("intent");
-const isInStandards = (path) =>
+const isInStandards = (path: string): boolean =>
   normalizePath(path).split("/").includes("standards");
 
-const walkMarkdown = async function* (dir) {
+const walkMarkdown = async function* (dir: string): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dir)) {
     const path = `${dir}/${entry.name}`;
     if (entry.isDirectory) {
@@ -77,8 +112,8 @@ const walkMarkdown = async function* (dir) {
   }
 };
 
-const stripInlineComment = (value) => {
-  let quote = null;
+const stripInlineComment = (value: string): string => {
+  let quote: string | null = null;
   for (let i = 0; i < value.length; i += 1) {
     const ch = value[i];
     if ((ch === '"' || ch === "'") && value[i - 1] !== "\\") {
@@ -91,10 +126,10 @@ const stripInlineComment = (value) => {
   return value.trim();
 };
 
-const splitInlineArray = (value) => {
-  const items = [];
+const splitInlineArray = (value: string): string[] => {
+  const items: string[] = [];
   let current = "";
-  let quote = null;
+  let quote: string | null = null;
   for (const ch of value) {
     if ((ch === '"' || ch === "'") && current.at(-1) !== "\\") {
       quote = quote === ch ? null : quote ?? ch;
@@ -110,7 +145,7 @@ const splitInlineArray = (value) => {
   return items;
 };
 
-const parseScalar = (raw) => {
+const parseScalar = (raw: string): YamlValue => {
   const value = stripInlineComment(raw);
   if (value === "") return "";
   if (value === "[]") return [];
@@ -129,7 +164,7 @@ const parseScalar = (raw) => {
   return value;
 };
 
-const parseFrontMatter = (src) => {
+const parseFrontMatter = (src: string): FrontMatterParseResult => {
   const lines = src.split(/\r?\n/);
   if (lines[0] !== "---") {
     return { attrs: null, error: "missing front matter" };
@@ -140,8 +175,7 @@ const parseFrontMatter = (src) => {
     return { attrs: null, error: "front matter is not closed" };
   }
 
-  const attrs = {};
-  const seenKeys = new Set();
+  const attrs: FrontMatter = {};
   for (let i = 1; i < end; i += 1) {
     const line = lines[i];
     if (line.trim() === "" || line.trimStart().startsWith("#")) continue;
@@ -152,16 +186,17 @@ const parseFrontMatter = (src) => {
     }
 
     const [, key, rest = ""] = match;
-    if (seenKeys.has(key)) {
-      return { attrs: null, error: `duplicate front matter key: ${key}` };
+    // 重複キーは後勝ちで黙殺せず error にする。どちらが有効かが読み手に見えず、
+    // front matter の契約が曖昧になるため。
+    if (key in attrs) {
+      return { attrs: null, error: `duplicate front matter field: ${key}` };
     }
-    seenKeys.add(key);
     if (rest.trim() !== "") {
       attrs[key] = parseScalar(rest);
       continue;
     }
 
-    const values = [];
+    const values: YamlValue[] = [];
     let cursor = i + 1;
     while (cursor < end) {
       const item = lines[cursor].match(/^\s+-\s+(.*)$/);
@@ -180,37 +215,106 @@ const parseFrontMatter = (src) => {
   return { attrs, error: null };
 };
 
-const loadFrontMatter = async (file) => {
+const loadFrontMatter = async (
+  file: string,
+): Promise<FrontMatterParseResult> => {
   const src = await Deno.readTextFile(file);
   return parseFrontMatter(src);
 };
 
-const optionalValue = (value) => value === "" ? undefined : value;
+const optionalValue = (value: YamlValue): YamlValue | undefined =>
+  value === "" ? undefined : value;
 
-const todayDate = () => parseDate(new Date().toISOString().slice(0, 10));
+const todayDate = (): Date | null =>
+  parseDate(new Date().toISOString().slice(0, 10));
 
-const report = (prefix, file, messages, logger) => {
+const parseArgs = (args: string[]): ParseArgsResult => {
+  if (args.length === 0) return { roots: ["_docs"], fixtureMode: false };
+  if (args[0] === "--fixture") {
+    return { roots: args.slice(1), fixtureMode: true };
+  }
+  return { roots: args, fixtureMode: false };
+};
+
+const fileKind = async (path: string): Promise<"file" | "directory" | null> => {
+  try {
+    const stat = await Deno.stat(path);
+    if (stat.isFile) return "file";
+    if (stat.isDirectory) return "directory";
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) return null;
+    throw err;
+  }
+  return null;
+};
+
+const collectMarkdown = async function* (
+  roots: string[],
+): AsyncGenerator<string> {
+  for (const root of roots) {
+    const kind = await fileKind(root);
+    if (kind === "file") {
+      if (root.endsWith(".md")) yield root;
+    } else if (kind === "directory") {
+      yield* walkMarkdown(root);
+    }
+  }
+};
+
+const allowedKeysFor = (file: string, fixtureMode: boolean): Set<string> => {
+  const allowed = new Set(COMMON_KEYS);
+  if (isDraftPath(file)) {
+    for (const key of DRAFT_ONLY_KEYS) allowed.add(key);
+  }
+  if (isQaPath(file)) {
+    for (const key of QA_ONLY_KEYS) allowed.add(key);
+  }
+  if (isIntentPath(file)) {
+    for (const key of INTENT_ONLY_KEYS) allowed.add(key);
+  }
+  if (fixtureMode) allowed.add("fixture_path");
+  return allowed;
+};
+
+const report = (
+  prefix: string,
+  file: string,
+  messages: string[],
+  logger: (message: string) => void,
+): void => {
   logger(`${prefix}: ${file}`);
   for (const msg of messages) logger(`  - ${msg}`);
 };
 
-const run = async () => {
-  const errors = [];
-  const warnings = [];
+const run = async (): Promise<void> => {
+  const errors: FileReport[] = [];
+  const warnings: FileReport[] = [];
   const inScope = makeInScope(await loadScope());
+  const { roots, fixtureMode } = parseArgs(Deno.args);
 
-  for await (const file of walkMarkdown("_docs")) {
-    if (isInArchives(file)) continue;
-    if (isInStandards(file)) continue;
+  if (roots.length === 0) {
+    errors.push({
+      file: "(args)",
+      messages: ["--fixture requires at least one path"],
+    });
+  }
+
+  for await (const file of collectMarkdown(roots)) {
+    if (!fixtureMode && (isInArchives(file) || isInStandards(file))) continue;
     if (!inScope(file)) continue;
 
     const { attrs: data, error } = await loadFrontMatter(file);
-    const fileErrors = [];
-    const fileWarnings = [];
-    if (error) {
-      errors.push({ file, messages: [error] });
+    const fileErrors: string[] = [];
+    const fileWarnings: string[] = [];
+    if (error || !data) {
+      errors.push({ file, messages: [error ?? "missing front matter"] });
       continue;
     }
+    const effectiveFile = fixtureMode && typeof data.fixture_path === "string"
+      ? normalizePath(data.fixture_path)
+      : file;
+    if (isInArchives(effectiveFile)) continue;
+    if (isInStandards(effectiveFile)) continue;
 
     for (const key of REQUIRED_KEYS) {
       if (!(key in data)) {
@@ -228,10 +332,18 @@ const run = async () => {
 
     const status = data.status;
     const draftStatus = data.draft_status;
-    if ("status" in data && !STATUS_VALUES.includes(status)) {
+    if (
+      "status" in data &&
+      typeof status === "string" &&
+      !(STATUS_VALUES as readonly string[]).includes(status)
+    ) {
       fileErrors.push(`status must be one of ${STATUS_VALUES.join(", ")}`);
     }
-    if ("draft_status" in data && !DRAFT_STATUS_VALUES.includes(draftStatus)) {
+    if (
+      "draft_status" in data &&
+      typeof draftStatus === "string" &&
+      !(DRAFT_STATUS_VALUES as readonly string[]).includes(draftStatus)
+    ) {
       fileErrors.push(
         `draft_status must be one of ${DRAFT_STATUS_VALUES.join(", ")}`,
       );
@@ -251,10 +363,13 @@ const run = async () => {
       );
     }
 
-    if (isQaPath(file)) {
+    if (isQaPath(effectiveFile)) {
       if (!("qa_status" in data)) {
         fileErrors.push("missing required QA field: qa_status");
-      } else if (!QA_STATUS_VALUES.includes(data.qa_status)) {
+      } else if (
+        typeof data.qa_status === "string" &&
+        !(QA_STATUS_VALUES as readonly string[]).includes(data.qa_status)
+      ) {
         fileErrors.push(
           `qa_status must be one of ${QA_STATUS_VALUES.join(", ")}`,
         );
@@ -262,8 +377,41 @@ const run = async () => {
 
       if (!("risk" in data)) {
         fileErrors.push("missing required QA field: risk");
-      } else if (!RISKS.includes(data.risk)) {
+      } else if (
+        typeof data.risk === "string" &&
+        !(RISKS as readonly string[]).includes(data.risk)
+      ) {
         fileErrors.push(`risk must be one of ${RISKS.join(", ")}`);
+      }
+    }
+    // schema marker は種別を跨がせず、値は既知の整数版のみ受理する。
+    // 文字列 "2" や未知の版番号を黙って通すと、schema の意味が緩む。
+    if ("qa_schema" in data) {
+      if (!isQaPath(effectiveFile)) {
+        fileErrors.push("qa_schema is allowed only on QA documents");
+      } else if (
+        typeof data.qa_schema !== "number" ||
+        !QA_SCHEMA_VALUES.includes(data.qa_schema)
+      ) {
+        fileErrors.push(
+          `qa_schema must be integer ${
+            QA_SCHEMA_VALUES.join(", ")
+          } when provided`,
+        );
+      }
+    }
+    if ("intent_schema" in data) {
+      if (!isIntentPath(effectiveFile)) {
+        fileErrors.push("intent_schema is allowed only on intent documents");
+      } else if (
+        typeof data.intent_schema !== "number" ||
+        !INTENT_SCHEMA_VALUES.includes(data.intent_schema)
+      ) {
+        fileErrors.push(
+          `intent_schema must be integer ${
+            INTENT_SCHEMA_VALUES.join(", ")
+          } when provided`,
+        );
       }
     }
     if (!isIntegerArray(data.related_prs)) {
@@ -298,8 +446,9 @@ const run = async () => {
       );
     }
 
-    if (isDraftPath(file) && status === "proposed" && updatedAt) {
+    if (isDraftPath(effectiveFile) && status === "proposed" && updatedAt) {
       const today = todayDate();
+      if (!today) continue;
       const daysSinceUpdate = diffDays(updatedAt, today);
       if (daysSinceUpdate > STALE_DAYS) {
         const parsedExempt = staleExemptUntilRaw
@@ -312,7 +461,8 @@ const run = async () => {
         }
         if (
           staleExemptUntilRaw &&
-          (!staleExemptReason || staleExemptReason.trim() === "")
+          (typeof staleExemptReason !== "string" ||
+            staleExemptReason.trim() === "")
         ) {
           fileErrors.push(
             "stale_exempt_reason is required when stale_exempt_until is set",
@@ -325,25 +475,15 @@ const run = async () => {
       }
     }
 
-    if (isDraftPath(file) && status && status !== "proposed") {
+    if (isDraftPath(effectiveFile) && status && status !== "proposed") {
       fileWarnings.push(
         `draft has status "${status}" (consider elevating to plan/intent or align status)`,
       );
     }
 
+    const allowedKeys = allowedKeysFor(effectiveFile, fixtureMode);
     for (const key of Object.keys(data)) {
-      const isTypeSpecificSchema =
-        (isIntentPath(file) && key === "intent_schema") ||
-        (isQaPath(file) && key === "qa_schema");
-      if (
-        !REQUIRED_KEYS.includes(key) &&
-        !(isQaPath(file) && ["qa_status", "risk"].includes(key)) &&
-        !isTypeSpecificSchema &&
-        !key.startsWith("stale_exempt") &&
-        key !== "stale_extensions"
-      ) {
-        fileWarnings.push(`unknown field: ${key}`);
-      }
+      if (!allowedKeys.has(key)) fileErrors.push(`unknown field: ${key}`);
     }
 
     if (fileErrors.length) errors.push({ file, messages: fileErrors });
@@ -362,7 +502,7 @@ const run = async () => {
   }
 };
 
-run().catch((err) => {
-  console.error(err);
+run().catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : String(err));
   Deno.exit(1);
 });

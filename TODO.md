@@ -358,7 +358,7 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
   - Notes: docs-only review。bulk marker editやruntime変更は行わない。
 - **Plan**: None
 - **Intent**: None
-- **QA**: None
+- **QA**: _docs/qa/Workflow/maintenance.md
 - **Verification**: None
 
 ### Workflow-Chore-21: [Chore] Move DEC / INV references out of code
@@ -384,7 +384,7 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
   - Notes: 対象: `host/waydroid_mpris/adb_recovery.py`（1）、`scripts/android-sdk-env.sh`（1）、`scripts/install-android-probe.sh`（1）
 - **Plan**: None
 - **Intent**: None
-- **QA**: None
+- **QA**: _docs/qa/Workflow/maintenance.md
 - **Verification**: None
 
 ---
