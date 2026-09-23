@@ -187,10 +187,11 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 
 - **What**: 本 lane の成果物 3 file (underscore area `waydroid_mpris`, `qa.md`, `qa_schema: 5`) が
   現行 validator に拒否される件は、本 lane では解消しない。`scripts/` の validators には触らず、
-  records 検査 (`check-docs.sh`) の赤は records 移出まで許容する (質問 q1 の回答)。
-- **Why**: validators は records script で移出される予定であり、出ていくものへの追従に本 lane の労を
-  割くべきでない。赤の期間は records 移出までに限られ、docs CI は DEC-32 が validator step を削除する
-  ため影響を受けず、public 側の検査にも影響しない。
+  records 検査 (`check-docs.sh`) の赤は validator を入れ替えるまで許容する (質問 q1 の回答)。
+- **Why**: 記録と validator は公開側から外れるが、work 側には残り、records 検査はそこで走り続ける。
+  非互換の原因は、導入時に旧 template の validator を残したことにあり、本 lane の範囲 (公開面の記述)
+  の外にある。validator の入れ替えは別の作業として扱う。records 検査は必須ではなく提出を止めない。
+  docs CI は DEC-32 が validator step を削除するため影響を受けず、public 側の検査にも影響しない。
 - **Change freedom**: 赤の示し方 (PR description 等での注記) は自由。validators への変更が 0 である
   ことだけが不変。
 - **Anchors**: `scripts/validate-intent.mjs`, `scripts/validate-qa.mjs`, `scripts/validate-doc-links.mjs`
