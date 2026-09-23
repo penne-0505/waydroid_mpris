@@ -2,7 +2,7 @@
 title: "QA: doctor.py に machine-readable な --json 出力を追加する"
 status: active
 qa_schema: 5
-qa_status: partial
+qa_status: verified
 risk: High
 created_at: 2026-09-24
 updated_at: 2026-09-24
@@ -39,7 +39,7 @@ related_prs: []
 | AC-007 | DEC-044, INV-019 | unittest 列挙行への新 test 追加 | command | README / QUICKSTART / docs-ci.yml の unittest 行への `grep tests/test_doctor_json.py` | verified |
 | AGENT-001 | DEC-043, INV-018 | agent misbehavior: 新 test が adb / waydroid / playerctl を実行しない | command | `tests/test_doctor_json.py` が `subprocess.run` を raise する mock で外部 command 実行を検知 | verified |
 | ROLLBACK-001 | DEC-041, DEC-044 | rollback / recovery: 差し戻しで実装前の stdout と exit code に戻る | diff-review | `scripts/doctor.py` / `tests/test_doctor_json.py` / `README.md` / `QUICKSTART.md` / `.github/workflows/docs-ci.yml` の差し戻し (runtime state を持たない) | verified |
-| R2-001 | DEC-041, DEC-042, DEC-043, DEC-044 | 記録のみから設計判断を再構成できる | diff-review | TODO `waydroid_mpris-R2-22` | deferred (R2 発動、再構成テストは TODO で追跡) |
+| R2-001 | DEC-041, DEC-042, DEC-043, DEC-044 | 記録のみから設計判断を再構成できる | diff-review | TODO `waydroid_mpris-R2-22` | verified（Round 2: Issue lane の S3 の R2 で approve） |
 
 ## Rounds
 
@@ -63,3 +63,19 @@ related_prs: []
 - agent misbehavior の確認: 新 test は `scripts.doctor.shutil.which` を None に固定し、`subprocess.run` を raise する mock を当てて外部 command の実行を検知する (AGENT-001 / INV-018)。doctor の check 収集と条件評価の flow は変えていない。
 - rollback / recovery の確認: 本差分は `scripts/doctor.py` / `tests/test_doctor_json.py` / `README.md` / `QUICKSTART.md` / `.github/workflows/docs-ci.yml` の 5 file に閉じ、runtime state / migration / data を持たない。差し戻しで `--json` flag が消え、AC-004 の byte-identical な実装前出力に戻る (ROLLBACK-001)。変更前の `scripts/doctor.py` に `--json` が無いことは `git show HEAD~1:scripts/doctor.py` で確認した。
 - review fix (1 巡目): path-based risk floor に合わせて本 qa.md の risk を Low から High へ上げた (F-1)。Round 1 の Intent Delta を三値契約の「新設」に直し (F-3)、R2 を `非発動` から `PENDING` に直して TODO に `waydroid_mpris-R2-22` を積んだ (F-2)。agent misbehavior と rollback / recovery の観点を Checks と本 round に足した (F-4)。
+
+### Round 2 (2026-09-24)
+
+- **Commands**:
+
+  ```bash
+  # Issue lane の S3 で R2（r2-reviewer）が差分 6b0f03b..b3d6019 と記録だけを読んで設計を組み立て直した
+  deno run --allow-read --allow-env --allow-run=git scripts/validate-qa.ts
+  deno run --allow-read --allow-env --allow-run=git scripts/validate-intent.ts
+  ```
+
+- **AC Coverage**: R2-001 verified。R2 は、`scripts/doctor.py` の `--json`・`tests/test_doctor_json.py`・README / QUICKSTART / docs-ci.yml のテストの列挙を、DEC-041〜044 の What / Why / Change freedom だけで例外なく組み立て直せたと報告し、qa の主張（44 本のテスト、実機の 13 の検査、`--json` なしの出力の一致、risk の下限）も実行で裏付けた。PR #4 は merge 済み。
+- **Intent Delta**: None: R2 の結果の記録で、新しい判断を含まない。R2 の should（DEC の番号が 041 から始まる根拠が repo に無い）は、番号の帯を Issue lane のハーネスが lane ごとに割り当てているためで、この repo の設計判断ではない。nit 3 件（Round 1 の記録の赤の件数の書き方、`ok` と終了コードの集計式の重複、reference の Issue 番号の由来）は残件とする
+- **R2**: approve（Issue lane の S3 で実施。must 0 / should 1 / nit 3）
+- **Verdict**: PASS
+
