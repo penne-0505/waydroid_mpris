@@ -54,6 +54,11 @@ def main() -> int:
         help="Inspect a pinned ADB serial instead of discovering the running Waydroid IP.",
     )
     parser.add_argument("--probe-path", default=DEFAULT_PROBE_PATH, help="Android path to latest_probe.json.")
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Print the checks as a single JSON object on stdout instead of human-readable lines.",
+    )
     args = parser.parse_args()
 
     checks: list[Check] = []
@@ -137,10 +142,24 @@ def main() -> int:
             )
             checks.append(check_mpris_metadata(status, metadata))
 
-    for check in checks:
-        print(f"{check.status:<4} {check.name}: {check.detail}")
+    if args.json:
+        sys.stdout.write(render_json_report(checks))
+    else:
+        for check in checks:
+            print(f"{check.status:<4} {check.name}: {check.detail}")
 
     return 1 if any(check.status == "FAIL" for check in checks) else 0
+
+
+def render_json_report(checks: list[Check]) -> str:
+    report = {
+        "ok": not any(check.status == "FAIL" for check in checks),
+        "checks": [
+            {"name": check.name, "status": check.status, "detail": check.detail}
+            for check in checks
+        ],
+    }
+    return json.dumps(report, indent=2, ensure_ascii=False) + "\n"
 
 
 def check_from_process(name: str, result: subprocess.CompletedProcess[str], expect_contains: str | None = None) -> Check:
