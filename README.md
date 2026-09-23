@@ -13,8 +13,6 @@ The Android companion reads the song title, playback state, control capabilities
 - Transport: ADB-backed local bridge. No host network listener is opened.
 - Recovery: the live daemon discovers the running Waydroid IP, reconnects a missing/offline ADB target with bounded backoff, and keeps `unauthorized` as an operator action. Automated coverage passes; disruptive live recovery QA remains deferred.
 
-The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verification.md](_docs/qa/Core/waydroid-mpris-bridge/verification.md). Automatic recovery has a `PARTIAL` verification record in [_docs/qa/Core/waydroid-adb-auto-recovery/verification.md](_docs/qa/Core/waydroid-adb-auto-recovery/verification.md); live restart / authorization QA requires explicit approval.
-
 ## Requirements
 
 - Arch-based Linux with a GNOME / systemd user session. Other distributions are
@@ -27,7 +25,7 @@ The bridge verification record is in [_docs/qa/Core/waydroid-mpris-bridge/verifi
 - ADB authorization for this host inside Waydroid. For daily use, allow the USB
   debugging prompt with "Always allow from this computer". Android can still
   expire the grant after an inactivity window; recovery and prevention are
-  documented in the usage guide.
+  documented in the [usage guide](docs/usage.md).
 - Notification listener access for `Waydroid MPRIS Probe` inside Waydroid.
 
 Install the host-side packages on Arch:
@@ -104,7 +102,7 @@ playerctl --player=waydroid_mpris play-pause
 ```
 
 If `playerctl --list-all` does not show `waydroid_mpris`, start the host daemon
-or enable the systemd user service from the usage guide.
+or enable the systemd user service from the [usage guide](docs/usage.md).
 
 ## Optional User Service
 
@@ -131,7 +129,8 @@ The doctor is read-only. It reports the resolved target as `device`, `missing`,
 `offline`, or `unauthorized`; the last state explicitly requires approval inside
 Waydroid.
 
-For systemd user service setup and troubleshooting details, see [_docs/guide/Core/waydroid-mpris-bridge/usage.md](_docs/guide/Core/waydroid-mpris-bridge/usage.md).
+For systemd user service setup and troubleshooting details, see the
+[usage guide](docs/usage.md).
 
 ## Development Checks
 
@@ -141,15 +140,8 @@ python -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scr
 bash -n scripts/*.sh
 ./scripts/install-user-service.sh --dry-run
 ./scripts/build-android-probe.sh
-./scripts/check-docs.sh
 git diff --check
 ```
-
-The docs workflow is validated by the same wrapper in CI. Use
-`docs-inventory` for current-state triage and `docs-template-migration` when
-updating the pinned template release. Template provenance lives in
-`docs-template.lock.json`; the CI validator scope uses `DD_SCOPE_BASE` and
-`DD_SCOPE_DIFF_FILTER=ACMR` for a separate project-local purpose.
 
 ## License
 

@@ -25,8 +25,8 @@ target is missing or offline. If Waydroid shows a USB debugging prompt, allow
 this computer. For daily use, enable "Always allow from this computer";
 Android can still expire that grant after an inactivity window. An
 `unauthorized` target requires operator approval and the host player remains
-`Stopped` / no active media until approval. See the usage guide's "ADB
-authorization timeout" section for diagnosis and prevention.
+`Stopped` / no active media until approval. See the [usage guide](docs/usage.md)
+"ADB authorization timeout" section for diagnosis and prevention.
 
 ## 2. Android Companion
 
@@ -71,8 +71,9 @@ python scripts/doctor.py
 
 Success means `playerctl --list-all` contains `waydroid_mpris`, status matches
 Apple Music, metadata contains the current title / artist, and doctor reports
-PASS. Automatic recovery after disruptive Waydroid restart has separate
-PARTIAL verification and is not required for initial setup reproduction.
+PASS. Automatic recovery after a disruptive Waydroid restart needs a separate
+live check that stops the Waydroid session; it is not required for initial setup
+reproduction.
 
 ## 5. Optional Systemd User Service
 
@@ -95,29 +96,11 @@ sample remains available at `packaging/systemd/waydroid-mpris.service`.
 
 ## 6. Development Workflow
 
-Run the project and docs checks before completing a change:
+Run the project checks before completing a change:
 
 ```bash
 python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py \
   tests/test_adb_recovery.py tests/test_live_failure_mapping.py \
   tests/test_position_projection.py tests/test_artwork_cache.py \
   tests/test_android_setup.py
-./scripts/check-docs.sh
 ```
-
-Use `docs-inventory` for current-state or stale-doc triage. Multi-file work uses
-`implementation-prep`; Size M or Risk Medium and above also uses Plan, Intent,
-QA test-plan, and `qa-review` before completion.
-
-### Template の継続更新
-
-Template provenance is stored in `docs-template.lock.json`. Update from an
-immutable recommended release tag with the `docs-template-migration` skill,
-and keep compatibility migration separate from strict schema migration.
-
-`v1.0.0` より前に導入され、lock がない repository は、履歴と matching
-upstream blobs から B を一意に復元できる場合だけ legacy bootstrap を使えます。
-中間 release を経由せず、`v1.0.0` 以降の任意の推奨 tag へ直接移行できます。
-
-`DD_SCOPE_BASE` は導入先 repository 内の validator scope を決める値です。
-Template provenance の revision には使わず、tag と full SHA は lock に記録します。

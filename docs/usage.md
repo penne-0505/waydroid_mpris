@@ -1,22 +1,3 @@
----
-title: Waydroid MPRIS bridge usage guide
-status: active
-draft_status: n/a
-created_at: 2026-07-09
-updated_at: 2026-07-27
-references:
-  - "_docs/intent/Core/waydroid-mpris-bridge/decision.md"
-  - "_docs/intent/Core/waydroid-adb-auto-recovery/decision.md"
-  - "_docs/reference/Core/bridge-protocol/reference.md"
-  - "_docs/qa/Core/waydroid-mpris-bridge/verification.md"
-  - "_docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md"
-  - "_docs/qa/Core/waydroid-adb-auto-recovery/verification.md"
-  - "_docs/intent/Core/reproducible-arch-setup/decision.md"
-  - "_docs/qa/Core/reproducible-arch-setup/test-plan.md"
-related_issues: []
-related_prs: []
----
-
 # Waydroid MPRIS bridge usage guide
 
 ## Supported Baseline And Requirements
@@ -162,10 +143,9 @@ The daemon never runs `adb kill-server`, starts or restarts Waydroid, or accepts
 an Android debugging prompt. These operations would affect state outside the
 bridge's selected target or bypass user consent.
 
-The non-destructive implementation verification is currently `PARTIAL`; see
-`_docs/qa/Core/waydroid-adb-auto-recovery/verification.md`. Actual service /
-Waydroid restart and authorization-transition evidence remains in
-`Core-Test-17` and requires explicit approval.
+Disruptive live verification across a Waydroid service restart and an
+authorization transition has not been performed. Running that check stops the
+Waydroid session, so it requires explicit approval first.
 
 ## Recovery Checklist
 

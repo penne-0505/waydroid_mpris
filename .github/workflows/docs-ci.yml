@@ -37,29 +37,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
           globs: |
-            _docs/**/*.md
-            _evals/**/*.md
             README.md
             AGENTS.md
-            TODO.md
             QUICKSTART.md
-            !_docs/archives/**/*
-            !_docs/standards/templates/**/*
+            docs/**/*.md
           config: .markdownlint.jsonc
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Run documentation validators
-        env:
-          DD_SCOPE_BASE: 43dd1b9d17ef4102ee3acacf95c1265056bed801
-          DD_SCOPE_DIFF_FILTER: ACMR
-        run: ./scripts/check-docs.sh
