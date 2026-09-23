@@ -2,7 +2,7 @@
 
 ## 0. System Metadata
 
-- **Current Max ID**: `Next ID No: 21` (タスク追加時にインクリメント必須)
+- **Current Max ID**: `Next ID No: 22` (タスク追加時にインクリメント必須)
 - **ID Source of Truth**: このファイルの `Next ID No` 行が、全プロジェクトにおける唯一の ID 発番元である。
 
 ## 1. Task Lifecycle (State Machine)
@@ -356,6 +356,32 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
 - **Description**:
   - Context: v1.0.0 compatibility migrationはPASSしたが、strict schema conversionはsemantic rewriteを伴うためdeferした。
   - Notes: docs-only review。bulk marker editやruntime変更は行わない。
+- **Plan**: None
+- **Intent**: None
+- **QA**: None
+- **Verification**: None
+
+### Workflow-Chore-21: [Chore] Move DEC / INV references out of code
+
+- **Title**: [Chore] Move DEC / INV references out of code
+- **ID**: Workflow-Chore-21
+- **Priority**: P2
+- **Size**: S
+- **Risk**: Low
+- **Area**: Workflow
+- **Dependencies**: []
+- **Goal**: コードから DEC / INV への言及がなくなり、統治対象のパス・シンボルは各 DEC の Anchors 節に記録されている。
+- **Acceptance Criteria**:
+  - AC-001: コード中（`_docs/` `_meta/` と Markdown を除く）に `DEC-nnn` / `INV-nnn` への言及が残っていない。
+  - AC-002: 外した言及が指していたパス・シンボルが、該当する DEC の Anchors 節にある。
+  - AC-003: コメントを外す以外の挙動の変更がない。
+- **Steps**:
+  1. [ ] 言及ごとに指している DEC / INV を確かめる
+  2. [ ] DEC の Anchors 節へパス・シンボルを移す
+  3. [ ] コードから言及を外し、検査を通す
+- **Description**:
+  - Context: idd init で overlay 構成へ移したとき、コード中に DEC / INV への言及が 3 件あった。overlay 構成では記録は公開側に出ないので、コードからは参照できない。
+  - Notes: 対象: `host/waydroid_mpris/adb_recovery.py`（1）、`scripts/android-sdk-env.sh`（1）、`scripts/install-android-probe.sh`（1）
 - **Plan**: None
 - **Intent**: None
 - **QA**: None

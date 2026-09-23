@@ -10,3 +10,22 @@ overlay.manifest
 docs-template.lock.json
 deno.json
 docs-validators.json
+
+# 以前の template が公開側に置いていたもの（記録の検査・agent 設定）
+_evals/
+.agents/
+.claude/
+.codex/
+docs-template.lock.example.json
+scripts/agent-workflow-hook.mjs
+scripts/check-docs.sh
+scripts/create-template-archive.sh
+scripts/scope.mjs
+scripts/test-agent-workflow-hook.mjs
+scripts/test-agent-workflow-smoke.mjs
+scripts/test-validators.mjs
+scripts/validate-doc-links.mjs
+scripts/validate-frontmatter.mjs
+scripts/validate-intent.mjs
+scripts/validate-qa.mjs
+scripts/validate-todo.mjs
