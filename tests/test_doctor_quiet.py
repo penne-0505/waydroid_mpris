@@ -34,21 +34,22 @@ class RenderQuietReportTest(unittest.TestCase):
 
         self.assertEqual(report, "WARN b: degraded\nFAIL c: broken\n")
         self.assertNotIn("PASS ", report)
-        self.assertNotIn("OK all", report)
 
     def test_all_passed_is_a_single_line_with_the_check_count(self) -> None:
         checks = [Check("a", "PASS", "ok"), Check("b", "PASS", "ok")]
 
         report = render_quiet_report(checks)
 
-        self.assertEqual(report, "OK all 2 checks passed\n")
+        # The wording is free; one line, the count, and no problem status are fixed.
         self.assertEqual(len(report.splitlines()), 1)
+        self.assertIn("2", report)
+        self.assertNotIn("FAIL", report)
+        self.assertNotIn("WARN", report)
 
     def test_warn_suppresses_the_all_passed_line(self) -> None:
         report = render_quiet_report([Check("a", "PASS", "ok"), Check("b", "WARN", "degraded")])
 
         self.assertEqual(report, "WARN b: degraded\n")
-        self.assertNotIn("OK all", report)
 
     def test_rendered_lines_match_the_human_readable_format(self) -> None:
         check = Check("adb target", "FAIL", "1.2.3.4 is missing")
@@ -68,7 +69,6 @@ class MainQuietTest(unittest.TestCase):
         self.assertEqual(quiet_code, 1)
         self.assertTrue(quiet_lines)
         self.assertNotIn("PASS ", quiet_stdout)
-        self.assertNotIn("OK all", quiet_stdout)
         self.assertEqual(quiet_lines, [line for line in human_lines if line.startswith("FAIL")])
 
     def test_quiet_exit_code_is_one_only_from_failures(self) -> None:

@@ -66,3 +66,4 @@ related_prs: []
 - records scope の `check-docs.sh` は既知の TODO.md 赤 (Core-Test-17) のみで、本 lane の記録 3 file は緑である。
 - agent misbehavior の確認: 新 test は `scripts.doctor.shutil.which` を None に固定し、`subprocess.run` を raise する mock を当てて外部 command の実行を検知する (AGENT-001 / INV-023)。`--quiet` と `--json` の同時指定は check 収集の前の parse で弾くため、この経路でも外部 command を実行しない。
 - rollback / recovery の確認: 本差分は `scripts/doctor.py` / `tests/test_doctor_quiet.py` / `README.md` / `QUICKSTART.md` / `.github/workflows/docs-ci.yml` の 5 file に閉じ、runtime state / migration / data を持たない。差し戻しで `--quiet` と 2 helper が消え、AC-004 の byte-identical な実装前出力に戻る (ROLLBACK-001)。
+- review fix (1 巡目): R2-001 が参照していた `waydroid_mpris-R2-23` を TODO.md の Backlog に積み、R2 の負債を着手可能な状態にした (F-1)。all-passed 行の文言を literal で固定していた test を、DEC-062 の Change freedom が不変とする「1 行・件数を含む・problem status を含まない」の検査へ変えた (F-2)。
