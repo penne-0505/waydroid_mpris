@@ -48,11 +48,14 @@ check の内容や評価 logic を変えることは non-goal である。
 ### DEC-062: FAIL も WARN も無いときは 1 行の all-passed を出す
 
 - **What**: `--quiet` で `FAIL` も `WARN` も無いとき、通過を示す 1 行だけを出す。
-  文言は件数を含む `OK all N checks passed` 形式にする (質問 q2 の回答)。
+  その行の不変の形は 3 点だけに絞る: (1) 1 行である、(2) 先頭が `OK` である、
+  (3) check の全件数を数値として含む。
 - **Why**: all-passed を出さないと quiet が「何も出ない」場合を作り、成功の確認ができない。
   件数を含めると quiet でも check 数の変化に気付ける。`WARN` は exit code では失敗でないが
   目で見るべき状態なので、all-passed の条件から外す (質問 q4 の回答)。
-- **Change freedom**: 文言の細部は自由。件数を含み 1 行で通過が判別できることを変えないこと。
+  不変の形を 3 点に閉じると、通過の判別に必要な最小限だけを契約として残し、言い回しの変更を
+  record と test の両方で許せる (レビュー 3 巡目の回答)。
+- **Change freedom**: 3 点以外の語・並び・句読点・言い回しは自由。3 点だけを変えないこと。
 - **Anchors**: `scripts/doctor.py`
 
 ### DEC-063: --json と --quiet の同時指定は使用 error にする
@@ -67,13 +70,17 @@ check の内容や評価 logic を変えることは non-goal である。
 ### DEC-064: quiet の出力生成を helper に分けて test 可能にする
 
 - **What**: check 列から quiet 出力を作る処理を `main()` の外の helper に置く。新 test
-  (`tests/test_doctor_quiet.py`) は helper 単体 (FAIL/WARN の filter と all-passed の両側) と、
+  (`tests/test_doctor_quiet.py`) は helper 単体 (FAIL/WARN の filter と all-passed の 3 点) と、
   `shutil.which` を None に差し替えた `main()` (4 check がすべて FAIL, rc=1, quiet 行が人間可読行の
-  部分集合になる。この経路では all-passed 行を出さない) で構成する。rc=0 側の all-passed は
-  健全な host での実行で確認する。
+  部分集合になる。この経路では all-passed 行を出さない) で構成する。加えて、`WARN` があっても
+  `FAIL` が無いとき rc=0 になることを、doctor の command を stub し `AdbRecoveryManager` を fake に
+  した `main()` (唯一の非 PASS が `host MPRIS player` の `WARN`) で守る。stub は外部 command を
+  実行せず、`subprocess.run` を raise する mock で実行を検知する。
 - **Why**: IDD-022 と同じ制約で、`which→None` の `main()` は rc=1 しか作れず、通過側を `main()` で
   作るには外部 command の実行 (INV-018 違反) か過剰な stub が必要である。`test_doctor_json.py` の
-  `run_main` 経路を再利用できる。
+  `run_main` 経路を再利用できる。exit code 規則の rc=0 側 (WARN あり FAIL なし) は、外部 command を
+  実行せずに再現するため stub した `main()` で守る。これで INV-022 の両側が unit test にある
+  (レビュー 2 巡目の回答)。
 - **Change freedom**: helper の名前と返す型は自由。`main()` の check 収集と条件評価の flow を
   変えないこと。
 - **Anchors**: `scripts/doctor.py`, `tests/test_doctor_quiet.py`
@@ -92,13 +99,13 @@ check の内容や評価 logic を変えることは non-goal である。
 
 - `python scripts/doctor.py --quiet` で FAIL と WARN の行 (または all-passed の 1 行) が得られる。
 - `--quiet` 無しの挙動 (人間可読行、`--json`、exit code) は変わらない。
-- doctor.py には出力生成の helper が 1 つ増える。check 収集と条件評価は変わらない。
+- doctor.py には出力生成の helper が増える (行 formatter と quiet report)。check 収集と条件評価は変わらない。
 - 新 test file が unittest discover と 3 箇所の列挙行の対象に加わる。
 
 ## Quality Implications
 
 - quiet 出力の check 行は人間可読出力と同じ形式で status と detail が一致する (all-passed の 1 行は除く)。
-- exit code 規則が `--quiet` の有無で変わらないこと。
+- exit code 規則が `--quiet` の有無で変わらないこと。WARN あり FAIL なしの rc=0 も unit test で守る。
 - 新 test が外部 command を実行しないこと。
 - 確認観点は `_docs/qa/waydroid_mpris/idd-023/qa.md` の Checks に対応付ける。
 
