@@ -2,11 +2,23 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
+import re
+import subprocess
 import sys
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
-from scripts.doctor import Check, format_check_line, main, render_quiet_report
+from scripts.doctor import (
+    DEFAULT_PROBE_PATH,
+    LISTENER_COMPONENT,
+    PACKAGE_NAME,
+    Check,
+    format_check_line,
+    main,
+    render_quiet_report,
+)
 
 
 def run_main(argv: list[str], which_result: str | None = None) -> tuple[int, str, str]:
@@ -20,6 +32,35 @@ def run_main(argv: list[str], which_result: str | None = None) -> tuple[int, str
     ), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
         code = main()
     return code, out.getvalue(), err.getvalue()
+
+
+PROBE_SNAPSHOT = json.dumps(
+    {
+        "selectedAppleMusicSession": {
+            "metadata": {"title": "t", "artist": "a", "artworkFile": {"present": True}},
+            "playbackState": {"state": "paused"},
+        }
+    }
+)
+
+
+def completed(command: list[str], stdout: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.CompletedProcess(command, 0, stdout, "")
+
+
+def fake_command_result(command: list[str], timeout: float = 5.0) -> subprocess.CompletedProcess[str]:
+    """Answer the doctor's commands so that one WARN is the only non-PASS check."""
+    if command == ["waydroid", "status"]:
+        return completed(command, "Session: RUNNING\nContainer: RUNNING\n")
+    if command == ["playerctl", "--list-all"]:
+        return completed(command, "")
+    if command[-1] == PACKAGE_NAME:
+        return completed(command, f"package:{PACKAGE_NAME}\n")
+    if command[-1] == "enabled_notification_listeners":
+        return completed(command, f"{LISTENER_COMPONENT}\n")
+    if command[-2:] == ["cat", DEFAULT_PROBE_PATH]:
+        return completed(command, PROBE_SNAPSHOT)
+    raise AssertionError(f"unexpected command: {command}")
 
 
 class RenderQuietReportTest(unittest.TestCase):
@@ -40,11 +81,13 @@ class RenderQuietReportTest(unittest.TestCase):
 
         report = render_quiet_report(checks)
 
-        # The wording is free; one line, the count, and no problem status are fixed.
-        self.assertEqual(len(report.splitlines()), 1)
-        self.assertIn("2", report)
-        self.assertNotIn("FAIL", report)
-        self.assertNotIn("WARN", report)
+        # The wording is free, but the shape is fixed: one line that carries the
+        # exact check count and reads as a pass.
+        lines = report.splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(re.findall(r"\d+", report), [str(len(checks))])
+        self.assertRegex(lines[0], r"(?i)\b(ok|passed?|success\w*|succeed\w*)\b")
+        self.assertNotRegex(report, r"(?i)fail|warn")
 
     def test_warn_suppresses_the_all_passed_line(self) -> None:
         report = render_quiet_report([Check("a", "PASS", "ok"), Check("b", "WARN", "degraded")])
@@ -75,6 +118,30 @@ class MainQuietTest(unittest.TestCase):
         quiet_code, _stdout, _ = run_main(["--quiet"], which_result=None)
 
         self.assertEqual(quiet_code, 1)
+
+    def test_quiet_exit_code_is_zero_when_only_a_warn_is_present(self) -> None:
+        # Every command is answered by a stub and the ADB manager is faked, so the
+        # single WARN is the "host MPRIS player" check; no external command runs.
+        out = io.StringIO()
+        inspection = SimpleNamespace(target="192.168.240.112:5555", state="device", ready=True)
+        with mock.patch.object(sys, "argv", ["doctor.py", "--quiet"]), mock.patch(
+            "scripts.doctor.shutil.which", return_value="/usr/bin/stub"
+        ), mock.patch(
+            "scripts.doctor.run", side_effect=fake_command_result
+        ), mock.patch(
+            "scripts.doctor.AdbRecoveryManager"
+        ) as manager, mock.patch(
+            "scripts.doctor.subprocess.run",
+            side_effect=AssertionError("the unit test must not run external commands"),
+        ), contextlib.redirect_stdout(out):
+            manager.return_value.inspect.return_value = inspection
+            code = main()
+
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            out.getvalue(), "WARN host MPRIS player: host daemon is not currently running\n"
+        )
+        self.assertNotIn("FAIL", out.getvalue())
 
     def test_quiet_and_json_together_are_a_usage_error(self) -> None:
         for argv in (["--quiet", "--json"], ["--json", "--quiet"]):

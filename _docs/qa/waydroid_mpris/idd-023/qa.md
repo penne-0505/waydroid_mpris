@@ -32,8 +32,8 @@ related_prs: []
 | ID | Source | Requirement / Invariant | Check Type | Command / File | Status |
 | --- | --- | --- | --- | --- | --- |
 | AC-001 | DEC-061, INV-020 | quiet が FAIL/WARN 行だけを出す | command | `tests/test_doctor_quiet.py` の filter 検査と、`which→None` の `main()` で PASS 行の不在を確認 | verified |
-| AC-002 | DEC-062, INV-021 | all-passed の 1 行 | command | helper 単体 test と、健全な host での `python scripts/doctor.py --quiet` の実行 | verified |
-| AC-003 | DEC-061, INV-022 | check 結果の exit code 規則の維持 | command | `tests/test_doctor_quiet.py` (rc=1 側) と、健全な host での rc=0 の実行 | verified |
+| AC-002 | DEC-062, INV-021 | all-passed の 1 行 | command | helper 単体 test (1 行 / 件数の完全一致 / 通過を示す語) と、健全な host での `python scripts/doctor.py --quiet` の実行 | verified |
+| AC-003 | DEC-061, INV-022 | check 結果の exit code 規則の維持 | command | `tests/test_doctor_quiet.py` の WARN のみ / FAIL ありの両側 (rc=0 と rc=1) と、健全な host での rc=0 の実行 | verified |
 | AC-004 | DEC-061 | 既存出力の非変化 | command | 実装前後の `python scripts/doctor.py` の stdout / stderr / rc の diff | verified |
 | AC-005 | DEC-063 | `--json` 同時指定の挙動 | command | `tests/test_doctor_quiet.py` での同時指定の検査 (rc=2 を含む) | verified |
 | AC-006 | DEC-064, INV-023 | 外部 command を使わない unit test | command | `/usr/bin/python3 -m unittest discover -s tests -p 'test_*.py'` と test 本体の目視 | verified |
@@ -67,3 +67,4 @@ related_prs: []
 - agent misbehavior の確認: 新 test は `scripts.doctor.shutil.which` を None に固定し、`subprocess.run` を raise する mock を当てて外部 command の実行を検知する (AGENT-001 / INV-023)。`--quiet` と `--json` の同時指定は check 収集の前の parse で弾くため、この経路でも外部 command を実行しない。
 - rollback / recovery の確認: 本差分は `scripts/doctor.py` / `tests/test_doctor_quiet.py` / `README.md` / `QUICKSTART.md` / `.github/workflows/docs-ci.yml` の 5 file に閉じ、runtime state / migration / data を持たない。差し戻しで `--quiet` と 2 helper が消え、AC-004 の byte-identical な実装前出力に戻る (ROLLBACK-001)。
 - review fix (1 巡目): R2-001 が参照していた `waydroid_mpris-R2-23` を TODO.md の Backlog に積み、R2 の負債を着手可能な状態にした (F-1)。all-passed 行の文言を literal で固定していた test を、DEC-062 の Change freedom が不変とする「1 行・件数を含む・problem status を含まない」の検査へ変えた (F-2)。
+- review fix (2 巡目): all-passed の検査を「1 行・件数の完全一致 (数値トークンの一致)・通過を示す語」の 3 点に強め、件数の substring 合致や文言不在だけで通る弱い assert をやめた (F-1)。WARN あり FAIL なしで rc=0 になることを、`scripts.doctor.run` と `AdbRecoveryManager` を stub して外部 command を実行しない unit test で確認した (F-2 / INV-022 / AC-003)。これで AC-003 の verified は unit test の両側 (rc=1 / rc=0) と健全な host の実行に裏付く。
