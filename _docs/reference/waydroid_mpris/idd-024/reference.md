@@ -72,7 +72,7 @@ related_prs: []
 - `scripts/validate-qa.ts` — `qa_schema: 5` の必須見出し 3 節と、`qa_status: planned` は Round 無し
   で許容されることを確認
 - `scripts/validate-intent.ts` — DEC 見出しは `DEC-` 3 桁以上、INV 行は
-  `- INV-nnn (from DEC-nnn):` 形式を要求することを確認。番号帯 DEC-101〜 / INV-020〜 は 3 桁
+  `- INV-nnn (from DEC-nnn):` 形式を要求することを確認。番号帯 DEC-101〜 / INV-024〜 は 3 桁
   zero padding で書く
 - `README.md` — Diagnostics 節の `--json` 案内と unittest 列挙行の現状を確認。JSON の byte 列を
   固定する記述は無く、`ensure_ascii` の変更は README を必ずしも変えないことを確認

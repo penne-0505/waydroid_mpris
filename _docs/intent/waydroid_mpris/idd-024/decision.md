@@ -101,9 +101,9 @@ lane の goal は FAIL 集計の一元化、非 UTF-8 stdout での有効な JSO
 
 ## Intent-derived Invariants
 
-- INV-020 (from DEC-101): JSON の `ok` と exit code は同一の FAIL 判定から導かれる
-- INV-021 (from DEC-102): `--json` の stdout はどの stdout encoding の環境でも JSON 全体を出力する
-- INV-022 (from DEC-103): 非 UTF-8 挙動の検査は外部 command を呼ばない unit test で行う
+- INV-024 (from DEC-101): JSON の `ok` と exit code は同一の FAIL 判定から導かれる
+- INV-025 (from DEC-102): `--json` の stdout はどの stdout encoding の環境でも JSON 全体を出力する
+- INV-026 (from DEC-103): 非 UTF-8 挙動の検査は外部 command を呼ばない unit test で行う
 
 ## Rollback / Follow-ups
 
