@@ -159,18 +159,22 @@ def main() -> int:
         for check in checks:
             print(format_check_line(check))
 
-    return 1 if any(check.status == "FAIL" for check in checks) else 0
+    return 1 if has_failure(checks) else 0
+
+
+def has_failure(checks: list[Check]) -> bool:
+    return any(check.status == "FAIL" for check in checks)
 
 
 def render_json_report(checks: list[Check]) -> str:
     report = {
-        "ok": not any(check.status == "FAIL" for check in checks),
+        "ok": not has_failure(checks),
         "checks": [
             {"name": check.name, "status": check.status, "detail": check.detail}
             for check in checks
         ],
     }
-    return json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+    return json.dumps(report, indent=2, ensure_ascii=True) + "\n"
 
 
 def format_check_line(check: Check) -> str:
