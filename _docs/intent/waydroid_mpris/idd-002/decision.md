@@ -39,24 +39,24 @@ related_prs: []
 (template v1.0.0) の規則に合わない。area 名 `waydroid_mpris` の underscore が path 正規表現を破り、
 `qa.md` という file 名と `qa_schema: 5` も現行の `validate-intent.mjs` / `validate-qa.mjs` /
 `validate-doc-links.mjs` に拒否される。そのため records 検査 (`scripts/check-docs.sh`) が赤になる。
-docs CI は DEC-32 が validator step を削除するため、この件では赤にならない。
+docs CI は DEC-032 が validator step を削除するため、この件では赤にならない。
 下調べ中の質問回答: q1 = 赤を許容し validator には触らない。validators 自体も records として
 移出されるので、赤は records 移出までの期間だけ許容する。
 
 ## Decisions
 
-### DEC-21: 変更対象は公開面の記述と CI lint だけにする
+### DEC-021: 変更対象は公開面の記述と CI lint だけにする
 
 - **What**: host / android / tests / fixtures / packaging と runtime 系 scripts には触れない。変更は
   `AGENTS.md` / `README.md` / `QUICKSTART.md` / 新設 `docs/` / `.github/workflows/docs-ci.yml` と、
-  移動で切れる records 参照の最小更新 (DEC-33) に限る。
+  移動で切れる records 参照の最小更新 (DEC-033) に限る。
 - **Why**: lane は docs と CI lint の整理が目的で、runtime 挙動の変更は明示的に禁止されている。
   触る範囲を先に固定すると、検証を public 側 4 check (unittest / py_compile / shell syntax /
   install dry-run) に絞れる。
 - **Change freedom**: 記述の文言は自由。runtime code への diff が 0 であることだけが不変。
 - **Anchors**: `README.md`, `QUICKSTART.md`, `AGENTS.md`, `docs/`, `.github/workflows/docs-ci.yml`
 
-### DEC-22: AGENTS.md は運用原則とコマンドだけを残す
+### DEC-022: AGENTS.md は運用原則とコマンドだけを残す
 
 - **What**: documentation guidelines / documentation operations への link, docs-inventory /
   docs-template-migration / qa-review の skill 規則, QA standard への従属, Size >= M / Risk >= Medium
@@ -71,7 +71,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: 残す原則の文言と並び順は自由。参照先が移出後も repo に残ることだけが不変。
 - **Anchors**: `AGENTS.md`, `AGENTS.override.md`
 
-### DEC-23: 恒久削除の禁止は但し書きを外して残す
+### DEC-023: 恒久削除の禁止は但し書きを外して残す
 
 - **What**: 「`git rm` や `rm` などの恒久削除は禁止」を残す。「archive checklist を満たす一時
   ドキュメントの移送に限り `mv` を許可」の但し書きは外す。
@@ -81,7 +81,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
   成立することだけが不変。
 - **Anchors**: `AGENTS.md`
 
-### DEC-24: usage guide と画像は docs/ へ移す
+### DEC-024: usage guide と画像は docs/ へ移す
 
 - **What**: `mkdir -p docs/assets` してから、`_docs/guide/Core/waydroid-mpris-bridge/usage.md` を
   `docs/usage.md` に、同 directory の `assets/adb-authorization-timeout-setting.png` を
@@ -92,7 +92,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
   壊れないことだけが不変。
 - **Anchors**: `docs/usage.md`, `docs/assets/adb-authorization-timeout-setting.png`, `README.md`
 
-### DEC-25: docs/usage.md から records への言及を外す
+### DEC-025: docs/usage.md から records への言及を外す
 
 - **What**: records の frontmatter (references 一式) を外す。本文の
   `_docs/qa/Core/waydroid-adb-auto-recovery/verification.md` への言及と `Core-Test-17` の記述を、
@@ -102,7 +102,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: 置き換えの文言は自由。records の path と task ID が出ないことだけが不変。
 - **Anchors**: `docs/usage.md`
 
-### DEC-26: QUICKSTART の検証文言は平文に置き換える
+### DEC-026: QUICKSTART の検証文言は平文に置き換える
 
 - **What**: §4 の「Automatic recovery ... has separate PARTIAL verification」を records を参照しない
   文言に置き換える。§1 の「the usage guide's "ADB authorization timeout" section」に `docs/usage.md`
@@ -112,7 +112,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: 文言と link の形式は自由。初期セットアップの再現手順が変わらないことだけが不変。
 - **Anchors**: `QUICKSTART.md`
 
-### DEC-27: README の verification record 段落は削除する
+### DEC-027: README の verification record 段落は削除する
 
 - **What**: Current Status 節の verification record 2 link を含む段落を削除する。直前の bullet list
   (Live metadata / Controls / Artwork / ...) は残す。
@@ -122,16 +122,16 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
   残らないことだけが不変。
 - **Anchors**: `README.md`
 
-### DEC-28: README の guide 参照は docs/usage.md に向ける
+### DEC-028: README の guide 参照は docs/usage.md に向ける
 
 - **What**: Diagnostics 節末尾の usage guide link を `docs/usage.md` に向ける。§Run / Requirements の
   「the usage guide」言及も `docs/usage.md` を指す文言に揃える。
-- **Why**: DEC-24 で guide が移動するため、旧 path の link は移動と同時に link 切れになる。
+- **Why**: DEC-024 で guide が移動するため、旧 path の link は移動と同時に link 切れになる。
 - **Change freedom**: link の書式 (inline / reference) は自由。`docs/usage.md` へ到達できることだけが
   不変。
 - **Anchors**: `README.md`
 
-### DEC-29: README の Development Checks から docs 検査を外す
+### DEC-029: README の Development Checks から docs 検査を外す
 
 - **What**: `./scripts/check-docs.sh` の行と、docs workflow / docs-inventory / docs-template-migration /
   `docs-template.lock.json` / `DD_SCOPE_BASE` を含む段落を削除する。unittest / py_compile / `bash -n` /
@@ -141,7 +141,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: 残す検査の並びと説明の詳細は自由。案内する検査が移出後も実行できることだけが不変。
 - **Anchors**: `README.md`
 
-### DEC-30: QUICKSTART から docs workflow の説明を外す
+### DEC-030: QUICKSTART から docs workflow の説明を外す
 
 - **What**: §6 から `./scripts/check-docs.sh` の行, docs-inventory / implementation-prep / qa-review の
   説明, 「Template の継続更新」節 (`docs-template.lock.json` / docs-template-migration / `DD_SCOPE_BASE`)
@@ -152,7 +152,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
   自由。records workflow の記述が残らないことだけが不変。
 - **Anchors**: `QUICKSTART.md`
 
-### DEC-31: docs CI の markdownlint は public markdown に限る
+### DEC-031: docs CI の markdownlint は public markdown に限る
 
 - **What**: lint job の markdownlint globs を `README.md` / `AGENTS.md` / `QUICKSTART.md` /
   `docs/**/*.md` にする。`_docs/**/*.md` / `_evals/**/*.md` / `TODO.md` と 2 つの除外行を外す。
@@ -161,7 +161,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: globs の書き方は自由。public markdown が lint 対象から漏れないことだけが不変。
 - **Anchors**: `.github/workflows/docs-ci.yml`
 
-### DEC-32: docs CI から documentation validator を外す
+### DEC-032: docs CI から documentation validator を外す
 
 - **What**: lint job から「Setup Deno」と「Run documentation validators」(`./scripts/check-docs.sh`) の
   step を削除する。`fetch-depth: 0` は validator の diff scope 用なので `1` に戻してよい。runtime job は
@@ -171,7 +171,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: `fetch-depth` 等の同時整理は自由。runtime job が変わらないことだけが不変。
 - **Anchors**: `.github/workflows/docs-ci.yml`
 
-### DEC-33: 移動で切れる records 参照は最小限更新する
+### DEC-033: 移動で切れる records 参照は最小限更新する
 
 - **What**: `_docs/plan/Core/waydroid-adb-auto-recovery/plan.md` の frontmatter reference から
   `_docs/guide/Core/waydroid-mpris-bridge/usage.md` を削除する。他の records 側の手入れは本 lane
@@ -183,7 +183,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Change freedom**: 削除の形式は自由。参照を残さないことと、差し替えないことだけが不変。
 - **Anchors**: `_docs/plan/Core/waydroid-adb-auto-recovery/plan.md`
 
-### DEC-34: validator との非互換は本 lane では解消しない
+### DEC-034: validator との非互換は本 lane では解消しない
 
 - **What**: 本 lane の成果物 3 file (underscore area `waydroid_mpris`, `qa.md`, `qa_schema: 5`) が
   現行 validator に拒否される件は、本 lane では解消しない。`scripts/` の validators には触らず、
@@ -191,7 +191,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - **Why**: 記録と validator は公開側から外れるが、work 側には残り、records 検査はそこで走り続ける。
   非互換の原因は、導入時に旧 template の validator を残したことにあり、本 lane の範囲 (公開面の記述)
   の外にある。validator の入れ替えは別の作業として扱う。records 検査は必須ではなく提出を止めない。
-  docs CI は DEC-32 が validator step を削除するため影響を受けず、public 側の検査にも影響しない。
+  docs CI は DEC-032 が validator step を削除するため影響を受けず、public 側の検査にも影響しない。
 - **Change freedom**: 赤の示し方 (PR description 等での注記) は自由。validators への変更が 0 である
   ことだけが不変。
 - **Anchors**: `scripts/validate-intent.mjs`, `scripts/validate-qa.mjs`, `scripts/validate-doc-links.mjs`
@@ -205,7 +205,7 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 - docs CI の lint job が public markdown の lint だけになり、documentation validator の実行は
   workflow から消える。
 - 本 lane の成果物が現行 validator に拒否されるため、records 検査 (`check-docs.sh`) は records
-  移出までの間、この件で赤くなる。docs CI は DEC-32 が validator step を削除するため影響しない。
+  移出までの間、この件で赤くなる。docs CI は DEC-032 が validator step を削除するため影響しない。
   本 lane では validators に触らない (質問 q1 の回答)。
 - AGENTS.md から QA / security / intent comment の規則が消えるため、public 側だけを見る
   contributor はそれらの規則を知る手段を失う。規則の正典は records の移出先にある。
@@ -225,12 +225,12 @@ docs CI は DEC-32 が validator step を削除するため、この件では赤
 
 ## Intent-derived Invariants
 
-- INV-008 (from DEC-21): 本 lane の diff は runtime code (host / android / tests / fixtures / packaging / runtime scripts) に触れない
-- INV-009 (from DEC-22): AGENTS.md の参照先はすべて records 移出後も repo に残る
-- INV-010 (from DEC-24): user-facing の usage guide とその画像は docs/ 配下にだけ置く
-- INV-011 (from DEC-25): public files は records の path と task ID を link と手順案内に使わない
-- INV-012 (from DEC-31): docs CI の markdownlint 対象は public markdown に限る
-- INV-013 (from DEC-32): docs CI は records の script を実行しない
+- INV-008 (from DEC-021): 本 lane の diff は runtime code (host / android / tests / fixtures / packaging / runtime scripts) に触れない
+- INV-009 (from DEC-022): AGENTS.md の参照先はすべて records 移出後も repo に残る
+- INV-010 (from DEC-024): user-facing の usage guide とその画像は docs/ 配下にだけ置く
+- INV-011 (from DEC-025): public files は records の path と task ID を link と手順案内に使わない
+- INV-012 (from DEC-031): docs CI の markdownlint 対象は public markdown に限る
+- INV-013 (from DEC-032): docs CI は records の script を実行しない
 
 ## Rollback / Follow-ups
 

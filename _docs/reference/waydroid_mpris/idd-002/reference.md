@@ -17,7 +17,7 @@ related_prs: []
 
 - IDD-002 (公開ファイルを開発記録から独立させる) の下調べで参照した file と、その理由の記録。
 - baseline の確認結果: public 側 4 check (unittest 38 tests / py_compile / shell syntax / install dry-run) は緑。records 検査は CI と同じ scope (`DD_SCOPE_BASE=43dd1b9d...`, `DD_SCOPE_DIFF_FILTER=ACMR`) で緑 (未 commit の成果物は git diff に載らないため)。
-- 下調べ中の質問回答: q1 = 赤を許容し validator には触らない (records 検査 `check-docs.sh` の赤は records 移出まで許容。docs CI は DEC-32 の validator step 削除により影響なし)。
+- 下調べ中の質問回答: q1 = 赤を許容し validator には触らない (records 検査 `check-docs.sh` の赤は records 移出まで許容。docs CI は DEC-032 の validator step 削除により影響なし)。
 - plan review (IDD-002-1) の指摘 F1〜F8 を現物で確認し、F1〜F5 と F8 を decision.md / qa.md に反映した。F6 は INV-011 の文言と Quality Implications の注記で、F7 は Rollback / Follow-ups で扱った。
 
 ## 下調べで見たもの
@@ -34,7 +34,7 @@ related_prs: []
 - `scripts/validate-doc-links.mjs` — frontmatter reference の存在検証と QA path 検査で同じ拒否が起きること、`docs/` が `ROOT_RELATIVE_PREFIXES` に無く frontmatter reference の `docs/...` は directory 相対で解決されることを確認、`_docs/plan/Core/waydroid-adb-auto-recovery/plan.md` が usage.md を frontmatter reference に持つことを確認
 - `scripts/validate-frontmatter.mjs` — 共通 frontmatter に `draft_status` が必須であること (IDD 成果物の schema とは一致しない) を確認
 - `scripts/scope.mjs` — env 未設定の local 実行では scope が null (全走査) になり、成果物が検証対象になることを確認
-- `_docs/plan/Core/waydroid-adb-auto-recovery/plan.md` — usage guide への frontmatter reference を確認 (DEC-33 の対象)
+- `_docs/plan/Core/waydroid-adb-auto-recovery/plan.md` — usage guide への frontmatter reference を確認 (DEC-033 の対象)
 - `_docs/standards/documentation_guidelines.md` — `_docs` の path / frontmatter / `intent_schema: 2` の規約を確認。本 lane の成果物 schema がこの repo の規約と衝突することを確認
 - `overlay.manifest` — public 側と records 側の境界 (records: `_docs` / `_meta` / `_evals` / `.agents` / `.claude` / `.codex` / validators / lock file 系) を確認
 - `.markdownlint.jsonc` — `ignores` の `_docs/archives/**` が records 移出後に無効になることを確認 (follow-up)
