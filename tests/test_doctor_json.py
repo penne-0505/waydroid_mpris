@@ -7,7 +7,7 @@ import sys
 import unittest
 from unittest import mock
 
-from scripts.doctor import Check, main, render_json_report
+from scripts.doctor import Check, has_failure, main, render_json_report
 
 
 def run_main(argv: list[str], which_result: str | None = None) -> tuple[int, str, str]:
@@ -58,6 +58,54 @@ class RenderJsonReportTest(unittest.TestCase):
 
     def test_report_ends_with_newline(self) -> None:
         self.assertTrue(render_json_report([Check("a", "PASS", "x")]).endswith("\n"))
+
+
+class NonAsciiDetailTest(unittest.TestCase):
+    non_ascii_detail = "日本語 / アーティスト / Playing"
+
+    def test_report_with_non_ascii_detail_is_ascii_and_parsable(self) -> None:
+        report = render_json_report([Check("latest probe", "PASS", self.non_ascii_detail)])
+
+        self.assertTrue(report.isascii())
+        parsed = json.loads(report)
+        self.assertTrue(parsed["ok"])
+        self.assertEqual(parsed["checks"][0]["detail"], self.non_ascii_detail)
+
+    def test_report_with_non_ascii_detail_survives_ascii_stdout(self) -> None:
+        report = render_json_report([Check("latest probe", "PASS", self.non_ascii_detail)])
+
+        buffer = io.BytesIO()
+        stream = io.TextIOWrapper(buffer, encoding="ascii")
+        stream.write(report)
+        stream.flush()
+
+        parsed = json.loads(buffer.getvalue().decode("ascii"))
+        self.assertTrue(parsed["ok"])
+        self.assertEqual(parsed["checks"][0]["detail"], self.non_ascii_detail)
+
+
+class FailureAggregationTest(unittest.TestCase):
+    def test_has_failure_ignores_pass_and_warn(self) -> None:
+        self.assertFalse(has_failure([Check("a", "PASS", "x"), Check("b", "WARN", "y")]))
+        self.assertTrue(has_failure([Check("a", "WARN", "x"), Check("b", "FAIL", "y")]))
+
+    def test_ok_ignores_warn_in_mixed_column(self) -> None:
+        report = json.loads(
+            render_json_report(
+                [Check("a", "PASS", "x"), Check("b", "WARN", "y"), Check("c", "PASS", "z")]
+            )
+        )
+
+        self.assertTrue(report["ok"])
+
+    def test_ok_is_false_when_mixed_column_contains_fail(self) -> None:
+        report = json.loads(
+            render_json_report(
+                [Check("a", "PASS", "x"), Check("b", "WARN", "y"), Check("c", "FAIL", "z")]
+            )
+        )
+
+        self.assertFalse(report["ok"])
 
 
 class MainJsonTest(unittest.TestCase):
