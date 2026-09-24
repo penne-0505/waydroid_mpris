@@ -2,7 +2,7 @@
 
 ## 0. System Metadata
 
-- **Current Max ID**: `Next ID No: 23` (タスク追加時にインクリメント必須)
+- **Current Max ID**: `Next ID No: 24` (タスク追加時にインクリメント必須)
 - **ID Source of Truth**: このファイルの `Next ID No` 行が、全プロジェクトにおける唯一の ID 発番元である。
 
 ## 1. Task Lifecycle (State Machine)
@@ -385,6 +385,33 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
 - **Plan**: None
 - **Intent**: None
 - **QA**: _docs/qa/Workflow/maintenance.md
+- **Verification**: None
+
+### waydroid_mpris-R2-23: [R2] Reconstruct intent for doctor.py --quiet output
+
+- **Title**: [R2] Reconstruct intent for doctor.py --quiet output
+- **ID**: waydroid_mpris-R2-23
+- **Priority**: P2
+- **Size**: S
+- **Risk**: High
+- **Area**: waydroid_mpris
+- **Dependencies**: []
+- **Goal**: DEC-061〜065 の記録だけを読み、doctor.py の `--quiet` 追加の設計判断を実装コードを見ずに再構成できることを確かめる。
+- **Acceptance Criteria**:
+  - AC-001: `decision.md` の DEC-061〜065 の What / Why / Change freedom と Anchors だけで、quiet の出力範囲・all-passed の条件・`--json` との関係・helper 分割の根拠を再構成できる。
+  - AC-002: 再構成した内容と実装コードの差が、記録に無い判断を含まない。
+  - AC-003: 再構成で見つかった記録の不足を `decision.md` へ反映し、結果を `qa.md` の Round に記録する。
+- **Steps**:
+  1. [ ] DEC-061〜065 と Anchors だけを読んで `--quiet` の設計判断を再構成する
+  2. [ ] 再構成結果を実装コードと突き合わせ、記録に無い判断を列挙する
+  3. [ ] 不足を `decision.md` へ反映し、`qa.md` に Round を追記する
+- **Description**:
+  - Context: IDD-023 の Round 1 が DEC-061〜065 を新設し、`scripts/` と `.github/` を変更したため R2 が発動した。round では `R2: PENDING` と記録した。
+  - Risk: 親の変更が workflow-sensitive path (`scripts/` / `.github/`) に触り、QA の risk floor が High のため、この QA (`_docs/qa/waydroid_mpris/idd-023/qa.md`) を共有する本 task も Risk High とする。
+  - Notes: docs-only の再構成テスト。runtime の挙動を変えないため rollback は docs の差し戻しで完結する。
+- **Plan**: None
+- **Intent**: _docs/intent/waydroid_mpris/idd-023/decision.md
+- **QA**: _docs/qa/waydroid_mpris/idd-023/qa.md
 - **Verification**: None
 
 ## Ready
