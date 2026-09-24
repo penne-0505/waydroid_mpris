@@ -25,6 +25,9 @@ DEFAULT_PROBE_PATH = "/sdcard/Android/data/dev.penne.waydroidmpris.probe/files/l
 LISTENER_COMPONENT = "dev.penne.waydroidmpris.probe/dev.penne.waydroidmpris.probe.ProbeNotificationListener"
 PACKAGE_NAME = "dev.penne.waydroidmpris.probe"
 
+# The statuses that --quiet surfaces; PASS and any all-passed summary are suppressed.
+PROBLEM_STATUSES = frozenset({"WARN", "FAIL"})
+
 
 @dataclass
 class Check:
@@ -54,10 +57,16 @@ def main() -> int:
         help="Inspect a pinned ADB serial instead of discovering the running Waydroid IP.",
     )
     parser.add_argument("--probe-path", default=DEFAULT_PROBE_PATH, help="Android path to latest_probe.json.")
-    parser.add_argument(
+    output_format = parser.add_mutually_exclusive_group()
+    output_format.add_argument(
         "--json",
         action="store_true",
         help="Print the checks as a single JSON object on stdout instead of human-readable lines.",
+    )
+    output_format.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Print only the FAIL and WARN checks, or one all-passed line when there are none.",
     )
     args = parser.parse_args()
 
@@ -144,9 +153,11 @@ def main() -> int:
 
     if args.json:
         sys.stdout.write(render_json_report(checks))
+    elif args.quiet:
+        sys.stdout.write(render_quiet_report(checks))
     else:
         for check in checks:
-            print(f"{check.status:<4} {check.name}: {check.detail}")
+            print(format_check_line(check))
 
     return 1 if any(check.status == "FAIL" for check in checks) else 0
 
@@ -160,6 +171,17 @@ def render_json_report(checks: list[Check]) -> str:
         ],
     }
     return json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+
+
+def format_check_line(check: Check) -> str:
+    return f"{check.status:<4} {check.name}: {check.detail}"
+
+
+def render_quiet_report(checks: list[Check]) -> str:
+    problems = [check for check in checks if check.status in PROBLEM_STATUSES]
+    if not problems:
+        return f"OK all {len(checks)} checks passed\n"
+    return "".join(f"{format_check_line(check)}\n" for check in problems)
 
 
 def check_from_process(name: str, result: subprocess.CompletedProcess[str], expect_contains: str | None = None) -> Check:
