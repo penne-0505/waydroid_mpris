@@ -101,7 +101,7 @@ Run the project checks before completing a change:
 ```bash
 python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py \
   tests/test_adb_recovery.py tests/test_live_failure_mapping.py \
-  tests/test_position_projection.py tests/test_artwork_cache.py \
-  tests/test_android_setup.py tests/test_doctor_json.py \
-  tests/test_doctor_quiet.py
+  tests/test_position_projection.py tests/test_mpris_position_lead.py \
+  tests/test_artwork_cache.py tests/test_android_setup.py \
+  tests/test_doctor_json.py tests/test_doctor_quiet.py
 ```
