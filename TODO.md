@@ -330,9 +330,10 @@ Risk の詳細は `_docs/standards/quality_assurance.md` を参照する。
 - **Description**:
   - Context: `Core-Enhance-16` は非破壊 unit/static/read-only verification まで PARTIAL で完了した。
   - Notes: この task は playback と Waydroid / ADB / user service を中断する。ユーザーの明示承認なしに実行しない。
+  - QA: 旧 template の記録は `_docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md` と `verification.md` に残る。着手時に同じ場所へ `qa.md` を作る。
 - **Plan**: _docs/plan/Core/waydroid-adb-auto-recovery/plan.md
 - **Intent**: _docs/intent/Core/waydroid-adb-auto-recovery/decision.md
-- **QA**: _docs/qa/Core/waydroid-adb-auto-recovery/test-plan.md
+- **QA**: _docs/qa/Core/waydroid-adb-auto-recovery/qa.md
 - **Verification**: None
 
 ### Workflow-Chore-20: [Chore] Review strict docs schema adoption
