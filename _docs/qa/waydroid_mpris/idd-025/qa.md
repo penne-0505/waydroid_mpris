@@ -101,3 +101,11 @@ test file を列挙して走らせるので、AC-018 で両者の test 数を突
 
 - R2 再構成テストが未実施である。Issue lane の S3 で隔離して行う。
 - 常駐 service の再起動と live の `Position` 実測は本 lane の scope 外に残る。
+
+### Round 2 (2026-09-25, Issue lane の S3 の R2 の結果)
+
+- **Commands**: Issue lane の S3 の R2（run `20260925-125501-r2-reviewer-opus`）。記録の検査 `bash scripts/check-docs.sh` を lane の worktree で通してから commit した
+- **AC Coverage**: Round 1 の R2（S3 に委ねたもの）の結果を記録するだけの round。AC の充足は Round 1 の記録のまま変えない — 記録のみ
+- **Intent Delta**: None: R2 の結果を記録する round で、判断を変えない
+- **R2**: R2 の結果（Round 1）。実施（Issue lane の S3 の同期形。隔離した R2 に固定設問だけを渡した。差分 `c8c471f6bf31..ced6b8767dc3`、run `20260925-125501-r2-reviewer-opus`）。判定 approve、費用 $0.799（Claude Code の API 換算）。gap: must 0・should 3・nit 5。should 以上: (1) review fix の記録が repo 外の result side_findings を参照していて、F-4 の中身と F-3 の扱いを記録だけから再構成できない。（_docs/qa/waydroid_mpris/idd-025/qa.md） (2) Change freedom の「_player_fingerprint は変えない」に Why が無く、変えたときに何が壊れるかを推測で補うしかない。（_docs/intent/waydroid_mpris/idd-025/decision.md） (3) 将来 Position を運ぶ経路 (Seeked signal など) を足すとき、published と real のどちらの時間軸を使うかが記録に無い。（_docs/intent/waydroid_mpris/idd-025/decision.md）。should 以上の gap は DEC の修繕か TODO に回す（提出前確認に示した）
+- **Verdict**: PARTIAL
