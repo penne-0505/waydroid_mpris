@@ -78,7 +78,7 @@ test file を列挙して走らせるので、AC-018 で両者の test 数を突
 
 - **Intent Delta**: 新設: DEC-121, DEC-122, DEC-123, DEC-124, DEC-125
 - **R2**: PENDING（Issue lane の S3 で実施）
-- **Verdict**: PARTIAL（R2 再構成テストが未実施。残リスクは本 round に記録）
+- **Verdict**: PARTIAL (R2 再構成テストが未実施。残リスクは本 round に記録)
 
 実施内容:
 
@@ -95,6 +95,7 @@ test file を列挙して走らせるので、AC-018 で両者の test 数を突
 - records 検査: `check-docs.sh` は既知の TODO.md 赤 (Core-Test-17) のみで、本 lane の記録 3 file と変更は緑である。
 - agent misbehavior の確認: 新 test は session bus へ接続せず、adb / waydroid / playerctl を実行しない。`serve_live` と `__init__` の test は `dbus` と依存クラスを `unittest.mock` で差し替える (AGENT-001 / INV-045)。
 - rollback / recovery の確認: 変更はコード 4 file・test 2 file・docs 1 file・列挙 3 file に閉じ、runtime state / migration / data を持たない。lead を `0` に戻すか差し戻すと、AC-012 の byte-identical な既定出力と実装前の公開値に戻る。`--position-lead-ms` 付きで install 済みの unit は `--force` で再生成する (ROLLBACK-001)。
+- review fix (1 巡目): F-1 は Verdict 行の `PARTIAL` の直後が全角括弧で、`validate-qa.ts` が `PARTIAL（R2` を Verdict として読み、`check-docs.sh` の qa 段が赤になっていた。半角空白と半角括弧に直し、本 round の「records 検査は緑」の記述を実際の結果に合わせた。F-2 は `SetPosition` の写像が公開値の書き戻しと clamp 両端しか検査しておらず、前方への絶対 seek の退行を検出できなかった。lead 非 0 で実位置より 5 秒前方の絶対位置を渡す test を足し、`requested − lead` の位置が送られ、実位置で頭打ちにならないことを検査した (AC-008)。F-4 は本 lane の規範に従い TODO を立てず、理由を result の side_findings に記録した。
 
 残リスク:
 

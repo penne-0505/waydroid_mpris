@@ -84,6 +84,17 @@ class MprisPositionLeadTest(unittest.TestCase):
             [("seekTo", int(bridge.position_projector.position_us() / 1000))],
         )
 
+    def test_set_position_forwards_absolute_seek_offset_by_lead(self) -> None:
+        bridge, dispatched = build_bridge(copy.deepcopy(self.snapshot), LEAD_MS)
+        track_id = protocol.mpris_metadata(bridge.session)["mpris:trackid"]
+        real_us = bridge.position_projector.position_us()
+        requested_us = real_us + 5_000_000
+
+        bridge.SetPosition(track_id, requested_us)
+
+        self.assertEqual(dispatched, [("seekTo", int((requested_us - LEAD_MS * 1000) / 1000))])
+        self.assertGreater(dispatched[0][1], int(real_us / 1000))
+
     def test_clamped_public_write_back_at_track_start_stays_at_zero(self) -> None:
         paused = copy.deepcopy(self.snapshot)
         session = paused["selectedAppleMusicSession"]
