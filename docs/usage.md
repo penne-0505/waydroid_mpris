@@ -74,6 +74,24 @@ other ADB devices are connected. To pin a specific serial instead:
 python scripts/run-host-mpris-live.py --device 192.168.240.112:5555 --poll-interval 1.0
 ```
 
+A lyrics client that feels late can be compensated by publishing `Position`
+ahead of the real playback position. The option is `--position-lead-ms`, it
+takes a signed integer, and it defaults to `0`, which publishes the real
+position:
+
+```bash
+python scripts/run-host-mpris-live.py --position-lead-ms 400
+```
+
+The offset shifts only the published value, and the result is clamped to the
+range from `0` to the track length. `Seek` commands and the value written back
+to Android still use the real position, so seeking never walks playback
+forward. A negative offset publishes a position behind the real one and stops
+at `0` near the track start. The offset is per-player, so every client on the
+bus, including rich presence integrations, sees the shifted value. With a
+non-zero offset the published `Position` no longer matches the MPRIS meaning of
+the true playback position.
+
 Check the exposed player:
 
 ```bash
@@ -98,6 +116,10 @@ To pin an explicit serial in the generated service:
 ```bash
 ./scripts/install-user-service.sh --device 192.168.240.112:5555 --enable-now
 ```
+
+The same offset can be baked into the generated unit with
+`./scripts/install-user-service.sh --position-lead-ms 400`. The installer takes
+a signed integer and omits the argument from `ExecStart` when the offset is `0`.
 
 Use `./scripts/install-user-service.sh --dry-run` to inspect the generated unit
 without writing it. If you need to reinstall after changing the serial or repo

@@ -24,6 +24,12 @@ def main() -> None:
     parser.add_argument("--probe-path", default=DEFAULT_PROBE_PATH, help="Android path to latest_probe.json.")
     parser.add_argument("--poll-interval", type=float, default=1.0, help="Polling interval in seconds.")
     parser.add_argument("--artwork-cache", default=None, help="Directory for cached artwork files.")
+    parser.add_argument(
+        "--position-lead-ms",
+        type=int,
+        default=0,
+        help="Report MPRIS Position this many milliseconds ahead of the real playback position. Default: 0.",
+    )
     args = parser.parse_args()
     serve_live(
         adb_path=args.adb,
@@ -31,6 +37,7 @@ def main() -> None:
         probe_path=args.probe_path,
         poll_interval_seconds=args.poll_interval,
         artwork_cache_dir=args.artwork_cache,
+        position_lead_ms=args.position_lead_ms,
     )
 
 
