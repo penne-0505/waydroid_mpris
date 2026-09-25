@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_NAME="waydroid-mpris"
 POLL_INTERVAL="1.0"
+POSITION_LEAD_MS="0"
 DEVICE=""
 ENABLE_NOW=0
 DRY_RUN=0
@@ -19,6 +20,8 @@ This script does not use sudo and only writes under ~/.config/systemd/user.
 Options:
   --device SERIAL          Pin an ADB serial instead of automatic Waydroid discovery.
   --poll-interval SECONDS  Poll interval for ADB snapshot reads. Default: 1.0.
+  --position-lead-ms MS    Report MPRIS Position this many ms ahead of the real
+                           playback position. Default: 0 (no offset).
   --service-name NAME      systemd user service name without .service.
                            Default: waydroid-mpris.
   --enable-now            Enable and start the service after installing it.
@@ -72,6 +75,15 @@ while [[ $# -gt 0 ]]; do
       POLL_INTERVAL="${1#--poll-interval=}"
       shift
       ;;
+    --position-lead-ms)
+      [[ $# -ge 2 ]] || die "--position-lead-ms requires a value"
+      POSITION_LEAD_MS="$2"
+      shift 2
+      ;;
+    --position-lead-ms=*)
+      POSITION_LEAD_MS="${1#--position-lead-ms=}"
+      shift
+      ;;
     --service-name)
       [[ $# -ge 2 ]] || die "--service-name requires a value"
       SERVICE_NAME="$2"
@@ -106,6 +118,7 @@ done
 SERVICE_NAME="${SERVICE_NAME%.service}"
 [[ "$SERVICE_NAME" =~ ^[A-Za-z0-9_.@-]+$ ]] || die "invalid service name: $SERVICE_NAME"
 [[ -n "$POLL_INTERVAL" ]] || die "--poll-interval must not be empty"
+[[ "$POSITION_LEAD_MS" =~ ^-?[0-9]+$ ]] || die "--position-lead-ms must be an integer: $POSITION_LEAD_MS"
 
 PYTHON_BIN="${PYTHON:-python}"
 PYTHON_PATH="$(command -v "$PYTHON_BIN" || true)"
@@ -115,6 +128,9 @@ HOST_SCRIPT="$ROOT_DIR/scripts/run-host-mpris-live.py"
 [[ -f "$HOST_SCRIPT" ]] || die "host daemon script not found: $HOST_SCRIPT"
 
 EXEC_START="$(systemd_quote_arg "$PYTHON_PATH") $(systemd_quote_arg "$HOST_SCRIPT") --poll-interval $(systemd_quote_arg "$POLL_INTERVAL")"
+if [[ "$POSITION_LEAD_MS" != "0" ]]; then
+  EXEC_START="$EXEC_START --position-lead-ms $(systemd_quote_arg "$POSITION_LEAD_MS")"
+fi
 if [[ -n "$DEVICE" ]]; then
   EXEC_START="$EXEC_START --device $(systemd_quote_arg "$DEVICE")"
 fi
