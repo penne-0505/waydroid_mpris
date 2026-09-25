@@ -36,12 +36,13 @@ class WaydroidMprisObject(dbus.service.Object):
         snapshot: dict[str, Any],
         command_handler: CommandHandler | None = None,
         artwork_provider: ArtworkProvider | None = None,
+        position_lead_ms: int = 0,
     ) -> None:
         self.snapshot = snapshot
         self.session = protocol.selected_session(snapshot)
         self.command_handler = command_handler
         self.artwork_provider = artwork_provider
-        self.position_projector = PositionProjector()
+        self.position_projector = PositionProjector(lead_us=int(position_lead_ms) * 1000)
         self.position_projector.update(self.session)
         self.art_url = self._load_art_url(self.session)
         bus_name = dbus.service.BusName(BUS_NAME, bus=bus)
@@ -88,7 +89,12 @@ class WaydroidMprisObject(dbus.service.Object):
     def SetPosition(self, track_id: dbus.ObjectPath, position: int) -> None:
         current_track = protocol.mpris_metadata(self.session).get("mpris:trackid")
         if str(track_id) == current_track:
-            self._dispatch("seekTo", max(0, int(position / 1000)))
+            requested_us = int(position)
+            if requested_us <= 0:
+                target_us = 0
+            else:
+                target_us = max(0, requested_us - self.position_projector.lead_us)
+            self._dispatch("seekTo", int(target_us / 1000))
 
     @dbus.service.method(PLAYER_IFACE, in_signature="s", out_signature="")
     def OpenUri(self, uri: str) -> None:
@@ -170,7 +176,7 @@ class WaydroidMprisObject(dbus.service.Object):
             "Shuffle": dbus.Boolean(False),
             "Metadata": metadata,
             "Volume": dbus.Double(1.0),
-            "Position": dbus.Int64(self.position_projector.position_us()),
+            "Position": dbus.Int64(self.position_projector.published_position_us()),
             "MinimumRate": dbus.Double(1.0),
             "MaximumRate": dbus.Double(1.0),
             "CanGoNext": dbus.Boolean(protocol.can_go_next(session)),
@@ -246,6 +252,7 @@ def serve_live(
     probe_path: str | None = None,
     poll_interval_seconds: float = 1.0,
     artwork_cache_dir: str | Path | None = None,
+    position_lead_ms: int = 0,
 ) -> None:
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SessionBus()
@@ -264,6 +271,7 @@ def serve_live(
         snapshot,
         command_handler=transport.send_command,
         artwork_provider=artwork_cache.art_url_for,
+        position_lead_ms=position_lead_ms,
     )
 
     def poll() -> bool:

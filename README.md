@@ -139,7 +139,7 @@ For systemd user service setup and troubleshooting details, see the
 ## Development Checks
 
 ```bash
-python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_artwork_cache.py tests/test_android_setup.py tests/test_doctor_json.py tests/test_doctor_quiet.py
+python -m unittest tests/test_protocol_mapping.py tests/test_adb_transport.py tests/test_adb_recovery.py tests/test_live_failure_mapping.py tests/test_position_projection.py tests/test_mpris_position_lead.py tests/test_artwork_cache.py tests/test_android_setup.py tests/test_doctor_json.py tests/test_doctor_quiet.py
 python -m py_compile host/waydroid_mpris/*.py scripts/run-host-mpris-live.py scripts/run-host-mpris-fixture.py scripts/doctor.py scripts/resolve-waydroid-adb-target.py scripts/run-disruptive-waydroid-restart-qa.py
 bash -n scripts/*.sh
 ./scripts/install-user-service.sh --dry-run
